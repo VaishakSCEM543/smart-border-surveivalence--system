@@ -43,4 +43,12 @@ graph TD
 The system implements a **Single-Direction Data Push** to Firebase, ensuring that the bot fleet remains "Invisible" to the public web. All database nodes are locked behind a rigorous "Read/Write: False" security rule set in production mode.
 
 ---
+
+## 🎨 4. Tactical UI/UX Design Philosophy
+The **ISBCAPD** dashboard is built using a "Tactical HUD" aesthetic, designed for fast cognitive processing in high-pressure surveillance scenarios:
+- **Typography**: Utilizing **Orbitron** (for headers) and **Share Tech Mono** (for terminal telemetry) to emulate military-grade C2 interfaces.
+- **Color Palette**: High-contrast neon-green (#00ff41) and cyan accents on a low-albedo "Matte Black" background to reduce eye strain during extended patrol monitoring.
+- **Glassmorphism**: Translucent panel layouts with subtle backdrop blurs provide depth and focus on critical detection metrics.
+
+---
 **Architectural Specification for the ISBCAPD Research Project.**
