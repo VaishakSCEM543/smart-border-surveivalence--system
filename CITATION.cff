@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this system for your research, please cite it as follows."
+authors:
+  - family-names: "Vaishak"
+    given-names: "and Team"
+title: "Intelligent Swarm based bots for Continuous area Patrolling and detection (ISBCAPD)"
+version: 3.0.0
+date-released: 2026-04-07
+url: "https://github.com/VaishakSCEM543/smart-border-surveivalence--system"
+keywords:
+  - "Swarm Intelligent System"
+  - "Autonomous Patrol"
+  - "Edge AI"
+  - "IEEE Paper"
+  - "YOLOv8"
+  - "Robot Surveillance"
+repository-code: "https://github.com/VaishakSCEM543/smart-border-surveivalence--system"
+abstract: >-
+  A distributed autonomous framework for continuous area patrolling and threat
+  detection utilizing a swarm of edge-AI bots (YOLOv8s), real-time mmWave radar
+  telemetry, and a unified C4ISR-grade terrestrial dashboard.

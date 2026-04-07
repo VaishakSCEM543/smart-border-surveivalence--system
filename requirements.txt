@@ -1,0 +1,12 @@
+# ISBCAPD System Dependencies
+# ---------------------------------------------------------
+# Required for YOLOv8s AI inference and MJPEG telemetry
+# Usage: pip install -r requirements.txt
+
+opencv-python>=4.8.0
+ultralytics>=8.0.0
+numpy>=1.24.0
+onnxruntime>=1.15.0
+flask>=2.3.0
+requests>=2.31.0
+urllib3>=2.0.0
