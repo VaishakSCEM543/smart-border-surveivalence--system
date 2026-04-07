@@ -52,4 +52,16 @@ python main.py
 - Log in with your secure credentials to initiate the drone-fleet sync.
 
 ---
+
+## 🔮 4. Future Research Roadmap
+As part of our **Major Engineering Project**, we are continuing to develop the ISBCAPD system with:
+- **Swarm Coordination**: Decentralized logic for multi-bot patrolling patterns.
+- **Enhanced mmWave Filtering**: Refining the HLK-LD2410C data to eliminate background environmental noise.
+- **Autonomous Navigation**: Integrating ToF (Time-of-Flight) sensors for dynamic obstacle avoidance in unpredictable terrains.
+- **Paper Publication**: Finalizing benchmarks for IEEE journal submission.
+
+## 🤝 5. Research Contributions
+We welcome collaboration from the academic and robotics community. Please refer to [CITATION.cff](./CITATION.cff) to formally reference this work in your publications.
+
+---
 **"Intelligent Autonomy For Continuous Perimeter Protection."**

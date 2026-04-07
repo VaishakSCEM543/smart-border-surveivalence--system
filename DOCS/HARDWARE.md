@@ -31,5 +31,15 @@
 - **Regulation**: LDO / Buck converter to stable 3.3V/5.0V rails
 - **Peak Current**: ~800mA (WiFi + AI Inference spike)
 
+## 🔌 5. SENSOR INTERFACE & GPIO MAPPING
+The following pinout configuration is utilized for the primary bot fleet integration:
+
+| Sensor | ESP32 Pin | Logic | Role |
+|--------|-----------|-------|------|
+| **HLK-LD2410C (RX)** | GPIO 14 | UART | Motion Signal |
+| **HLK-LD2410C (TX)** | GPIO 15 | UART | Data/Commands |
+| **GY-VL53L0X (SDA)** | GPIO 13 | I2C | Distance Data |
+| **GY-VL53L0X (SCL)** | GPIO 12 | I2C | I2C Clock |
+
 ---
-**This document is part of the ISBCAPD Academic Research Project.**
+**Architectural Blueprint for the ISBCAPD Academic Research Project.**
