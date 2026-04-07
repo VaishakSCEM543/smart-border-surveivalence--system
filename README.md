@@ -1,56 +1,55 @@
-# ISBCAPD: Smart Border Surveillance & Swarm Intelligence System
+# Intelligent Swarm based bots for Continuous area Patrolling and detection (ISBCAPD)
 
 ![Project Version](https://img.shields.io/badge/Version-3.0_Tactical-cyan)
 ![Platform](https://img.shields.io/badge/Platform-ESP32--CAM_|_Python_|_Firebase-green)
 ![Security](https://img.shields.io/badge/Security-Hardened-blueviolet)
 
-## 📡 Tactical Command & Control
-**ISBCAPD** (Intelligent Swarm-based bots for Continuous area Patrolling and detection) is a next-generation surveillance framework. It provides a unified **C4ISR Tactical Interface** for managing autonomous patrol bots, real-time AI threat detection, and multi-sensor fusion.
+## 📡 Overview: Autonomous Area Patrolling
+**ISBCAPD** is a high-fidelity, distributed sensor and robotics framework designed for **Continuous area Patrolling and detection**. The system utilizes a swarm of autonomous bots to monitor large perimeters, employing Edge-AI and real-time telemetry to provide a unified command and control interface.
 
 ---
 
-### 🖥️ High-Tech Tactical Dashboard
-The system features a futuristic, glassmorphism-inspired command center built for high-stakes monitoring:
-- **Neural Targeting Matrix**: Live AI-processed video feed with persistent target tracking.
-- **Biometric Analytics**: Real-time confidence scoring and threat classification.
-- **Radar Sweep**: Visual mmWave radar telemetry for movement detection.
-- **System Vitals**: Real-time bot health, sensor status, and connection uptime.
+### 🖥️ Tactical C4ISR Dashboard
+The system's control center is a futuristic, glassmorphism-inspired terminal designed for high-stakes perimeter monitoring:
+- **Neural Targeting Matrix**: Live AI-processed video feed from the active swarm.
+- **Biometric Analytics**: Real-time confidence scoring and threat classification per unit.
+- **Radar Sweep**: Visualized mmWave HLK-LD2410C telemetry for motion tracking.
+- **System Vitals**: Real-time bot health, GPS fixes, and connection uptime.
 
 ### 🤖 Intelligent AI Backend
-- **Edge Vision**: Powered by an optimized **YOLOv8s** engine for real-time person detection.
-- **Zero-Lag Pipeline**: Asynchronous threading ensures a smooth video stream even during heavy AI processing.
-- **Reliability Layer**: Built-in temporal smoothing eliminates false triggers from shadows or glitches.
+- **Edge Vision Engine**: Powered by an optimized **YOLOv8s** model for low-latency person detection.
+- **Asynchronous Pipeline**: Built using a Producer-Consumer threading model in Python to eliminate video lag.
+- **Temporal Hysteresis Logic**: Multi-frame smoothing algorithm that eliminates false triggers from environmental noise.
 
-### 🛡️ Enterprise-Grade Security
-- **Hardened Firebase Architecture**: Custom security rules protect your bot telemetry from unauthorized access.
-- **Encrypted Real-Time Sync**: Sub-second data synchronization between your physical bots and the global dashboard.
+### 🛡️ Hardened Cloud Infrastructure
+- **Secure Telemetry**: Custom Firebase Realtime Database rules protect swarm data from unauthorized access.
+- **Live Sync**: Sub-second synchronization between individual patrol bots and the global dashboard.
 
 ---
 
 ## 🛠️ System Architecture
-- **Vision Core**: Python 3.x + OpenCV + Ultralytics YOLOv8
-- **UI/UX**: HTML5 / CSS3 / JavaScript (Cyberpunk/Tactical Aesthetic)
-- **Database**: Firebase Realtime DB (Secured & Hardened)
-- **Communication**: MJPEG Stream + REST API
+- **Vision Core**: Python 3.13 + OpenCV + Ultralytics YOLOv8s + ONNX Runtime
+- **Frontend UI**: HTML5 / CSS3 / JavaScript (Share Tech Mono & Orbitron Typography)
+- **Communications**: MJPEG HTTP Stream + REST API + Firebase SDK
 
 ## 🚀 Deployment Guide
 
-### 1. Backend Setup
+### 1. AI Backend Configuration
 ```bash
 # Clone the repository
 git clone https://github.com/VaishakSCEM543/smart-border-surveivalence--system.git
 cd smart-border-surveivalence--system
 
-# Install dependencies
-pip install opencv-python ultralytics firebase-admin flask
+# Install requirements
+pip install opencv-python ultralytics onnxruntime flask
 
-# Launch the AI Engine
+# Launch the Primary Detection Engine
 python main.py
 ```
 
-### 2. Frontend Launch
-- Open `BOT_WEBSITE_FINAL_1.html` in any modern web browser.
-- Log in using your secure credentials (configured in `auth.js`).
+### 2. Tactical Dashboard Access
+- Locate and open `BOT_WEBSITE_FINAL_1.html` in your browser.
+- Log in with your secure credentials to initiate the drone-fleet sync.
 
 ---
-**"Securing Perimeters with Intelligent Autonomy."**
+**"Intelligent Autonomy For Continuous Perimeter Protection."**
