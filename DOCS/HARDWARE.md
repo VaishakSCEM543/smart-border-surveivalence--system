@@ -41,5 +41,21 @@ The following pinout configuration is utilized for the primary bot fleet integra
 | **GY-VL53L0X (SDA)** | GPIO 13 | I2C | Distance Data |
 | **GY-VL53L0X (SCL)** | GPIO 12 | I2C | I2C Clock |
 
+## 🛠️ 6. HARDWARE TROUBLESHOOTING & MAINTENANCE
+Professional deployment of the ISBCAPD bot fleet requires addressing common edge-node challenges:
+
+### A. ESP32 Dynamic IP Reset
+- **Problem**: IP address changes on router reboot.
+- **Solution**: Set a **static IP lease** in the router's DHCP reservation list.
+- **Manual Override**: Access the ESP32 Serial Monitor (115200 baud) to view the newly assigned IP.
+
+### B. Thermal Management
+- **Problem**: ESP32-CAM SoC can reach 60°C during prolonged inference.
+- **Solution**: Use an integrated **passive heatsink** or a 5V micro-fan to maintain visual throughput.
+
+### C. Wi-Fi Signal Latency
+- **Problem**: Lag from 2.4GHz interference.
+- **Optimization**: Use **Channel 1, 6, or 11** for ESP32 and limit the concurrent client count to one.
+
 ---
 **Architectural Blueprint for the ISBCAPD Academic Research Project.**
