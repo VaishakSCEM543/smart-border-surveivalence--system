@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Local environment files
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Firebase logs
+firebase-debug.log*
+.firebase/
+
+# Project-specific junk
+temp/
+logs/
+*.log
+FIG_1_Latency_Pipeline.png
+FIG_2_Temporal_Smoothing.png
+# (Exclude images above if you want to keep the repo small, 
+# but for research projects, it's often better to KEEP them.)
