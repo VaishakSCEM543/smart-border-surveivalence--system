@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surveillance Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Dashboard Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="top-nav">
+        <div class="brand">
+            <div class="pulse-ring"></div>
+            <h1>SURVEILLANCE_OS</h1>
+        </div>
+        <div class="controls">
+            <select id="bot-selector">
+                <option value="bot1">Deploy: BOT_01 [Primary]</option>
+                <option value="bot2">Deploy: BOT_02 [Recon]</option>
+            </select>
+            <div class="status-indicator">
+                <span id="network-status" class="status-text">Connecting...</span>
+                <div class="status-dot"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- LEFT: Map Panel -->
+        <section class="panel map-panel">
+            <div class="panel-header">
+                <h2>GPS Telemetry</h2>
+                <span id="gps-timestamp" class="timestamp">--:--:--</span>
+            </div>
+            <div id="map" class="map-container"></div>
+            <div class="coordinates">
+                <span>LAT: <strong id="val-lat">--</strong></span>
+                <span>LNG: <strong id="val-lng">--</strong></span>
+            </div>
+        </section>
+
+        <!-- RIGHT: Hardware Panels -->
+        <aside class="hardware-grid">
+            
+            <!-- Camera Stream -->
+            <section class="panel camera-panel">
+                <div class="panel-header">
+                    <h2>Live Optics</h2>
+                    <span class="live-badge">LIVE</span>
+                </div>
+                <div class="camera-feed">
+                    <img id="camera-stream" src="" alt="Awaiting Stream..." onerror="this.alt='Camera Offline'">
+                </div>
+            </section>
+
+            <!-- AI Engine -->
+            <section class="panel ai-panel">
+                <div class="panel-header">
+                    <h2>Neural AI</h2>
+                    <span id="ai-timestamp" class="timestamp">--:--:--</span>
+                </div>
+                <div class="ai-stats">
+                    <div class="stat-box">
+                        <span class="label">Entity Detected</span>
+                        <h3 id="val-person">UNKNOWN</h3>
+                    </div>
+                    <div class="stat-box">
+                        <span class="label">Confidence</span>
+                        <h3 id="val-confidence">--%</h3>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sensors -->
+            <section class="panel sensor-panel">
+                <div class="panel-header">
+                    <h2>Hardware Array</h2>
+                </div>
+                <div class="sensor-stats">
+                    <div class="stat-box">
+                        <span class="label">Radar Field</span>
+                        <h3 id="val-radar">CLEAR</h3>
+                    </div>
+                    <div class="stat-box">
+                        <span class="label">GPS Satellites</span>
+                        <h3 id="val-sats">--</h3>
+                    </div>
+                    <div class="stat-box">
+                        <span class="label">Mesh Network</span>
+                        <h3 id="val-mesh">UNKNOWN</h3>
+                    </div>
+                </div>
+            </section>
+
+        </aside>
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Application Logic (ES Modules) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

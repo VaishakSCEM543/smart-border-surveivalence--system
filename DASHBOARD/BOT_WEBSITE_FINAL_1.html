@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL v3.0 — Multi-Bot Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Firebase Realtime Database (compat SDK for single-file HTML) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --bg:#040c12; --panel:#070f17; --panel2:#0a141e;
+  --border:#0c1e2e; --border2:#163248; --border3:#1e4a6a;
+  --accent:#00cfff; --a2:#00ff88; --a3:#ff3c3c; --a4:#ffaa00; --a5:#bf00ff;
+  --text:#b8dff0; --tdim:#3a6a8a; --tbright:#e0f4ff;
+  --glow:0 0 14px rgba(0,207,255,.45);
+  --glow2:0 0 14px rgba(0,255,136,.45);
+  --glow3:0 0 14px rgba(255,60,60,.45);
+  --fm:'Share Tech Mono',monospace;
+  --fd:'Orbitron',monospace;
+  --fu:'Rajdhani',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--fu);}
+
+/* SCANLINES */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.035) 0,rgba(0,0,0,.035) 1px,transparent 1px,transparent 3px);pointer-events:none;z-index:9000;}
+
+/* ══ LOGIN ══ */
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:8000;flex-direction:column;}
+.l-rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);}
+.l-ring{position:absolute;border-radius:50%;border:1px solid;transform:translate(-50%,-50%);left:0;top:0;animation:rpulse 3.5s ease-in-out infinite;}
+.l-ring:nth-child(1){width:280px;height:280px;border-color:rgba(0,207,255,.18);animation-delay:0s;}
+.l-ring:nth-child(2){width:480px;height:480px;border-color:rgba(0,207,255,.09);animation-delay:.6s;}
+.l-ring:nth-child(3){width:680px;height:680px;border-color:rgba(0,207,255,.05);animation-delay:1.2s;}
+.l-ring:nth-child(4){width:900px;height:900px;border-color:rgba(0,207,255,.025);animation-delay:1.8s;}
+@keyframes rpulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1;}50%{transform:translate(-50%,-50%) scale(1.05);opacity:.5;}}
+.l-bg-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,207,255,.07) 0%,transparent 60%);animation:rpulse 4s ease-in-out infinite;}
+.l-box{position:relative;z-index:2;width:400px;padding:44px 38px;background:rgba(7,15,23,.97);border:1px solid var(--border3);clip-path:polygon(14px 0%,100% 0%,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);}
+.l-box::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,207,255,.04) 0%,transparent 55%);pointer-events:none;}
+.l-logo{font-family:var(--fd);font-size:30px;font-weight:900;letter-spacing:8px;color:var(--accent);text-shadow:var(--glow);text-align:center;margin-bottom:4px;}
+.l-ver{font-family:var(--fm);font-size:9px;color:var(--tdim);text-align:center;letter-spacing:4px;margin-bottom:36px;}
+.l-field{margin-bottom:18px;}
+.l-field label{display:block;font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;margin-bottom:7px;}
+.l-field input{width:100%;background:rgba(0,207,255,.04);border:1px solid var(--border3);color:var(--tbright);font-family:var(--fm);font-size:13px;padding:11px 14px;outline:none;transition:all .2s;clip-path:polygon(7px 0%,100% 0%,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);}
+.l-field input:focus{border-color:var(--accent);background:rgba(0,207,255,.07);box-shadow:var(--glow);}
+.l-field input::placeholder{color:var(--tdim);}
+.l-err{font-family:var(--fm);font-size:10px;color:var(--a3);text-align:center;min-height:16px;margin-bottom:14px;letter-spacing:1px;}
+.l-btn{width:100%;padding:13px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:4px;cursor:pointer;transition:all .25s;clip-path:polygon(7px 0%,100% 0%,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);position:relative;overflow:hidden;}
+.l-btn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:translateX(-100%);transition:.25s;z-index:-1;}
+.l-btn:hover{color:var(--bg);box-shadow:var(--glow);}
+.l-btn:hover::before{transform:translateX(0);}
+.l-hint{font-family:var(--fm);font-size:9px;color:var(--tdim);text-align:center;margin-top:16px;letter-spacing:1px;}
+.l-hint span{color:var(--accent);}
+
+/* ══ APP SHELL ══ */
+#app{display:none;flex-direction:column;height:100vh;position:relative;z-index:1;}
+#app.active{display:flex;}
+
+/* TOPBAR */
+.topbar{height:54px;display:flex;align-items:center;padding:0 20px;gap:20px;border-bottom:1px solid var(--border);background:rgba(7,15,23,.98);flex-shrink:0;position:relative;z-index:200;}
+.tb-logo{font-family:var(--fd);font-size:16px;font-weight:900;color:var(--accent);letter-spacing:5px;text-shadow:var(--glow);white-space:nowrap;}
+.tb-sep{color:var(--border3);font-family:var(--fm);font-size:18px;}
+.tb-sub{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;white-space:nowrap;}
+.tb-pills{display:flex;gap:8px;margin-left:8px;}
+.tb-pill{display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:1px;padding:4px 10px;border:1px solid var(--border2);clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);}
+.tb-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--a2);box-shadow:var(--glow2);animation:blink 2s infinite;}
+.tb-pill .dot.warn{background:var(--a3);box-shadow:var(--glow3);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.tb-clock{font-family:var(--fm);font-size:11px;color:var(--accent);letter-spacing:2px;margin-left:auto;}
+.tb-session{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:1px;}
+.tb-session span{color:var(--accent);}
+.tb-navbtn{background:transparent;border:1px solid var(--border2);color:var(--tdim);font-family:var(--fm);font-size:9px;padding:6px 14px;cursor:pointer;letter-spacing:2px;transition:all .2s;clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);}
+.tb-navbtn:hover{border-color:var(--accent);color:var(--accent);}
+.tb-navbtn.active-nav{border-color:var(--accent);color:var(--accent);background:rgba(0,207,255,.07);}
+
+/* MAIN AREA */
+.main{flex:1;display:flex;overflow:hidden;position:relative;}
+.main.focus-mode #map-layer{flex:0 0 35%; max-width:35%; border-right:1px solid var(--accent);}
+.main.focus-mode #ai-panel{transform:translateX(100%); opacity:0;}
+
+/* ══ MAP LAYER ══ */
+#map-layer{flex:1;position:relative;display:flex;transition:flex .5s cubic-bezier(.22,1,.36,1), max-width .5s cubic-bezier(.22,1,.36,1);}
+#leaflet-map{flex:1;z-index:1;}
+
+/* Custom leaflet dark tiles override */
+.leaflet-tile-pane{filter:brightness(.45) saturate(.4) hue-rotate(180deg);}
+.leaflet-container{background:#040c12;}
+
+/* Map overlay corners */
+.map-corner{position:absolute;width:22px;height:22px;z-index:10;pointer-events:none;}
+.map-corner.tl{top:12px;left:12px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+.map-corner.tr{top:12px;right:12px;border-top:2px solid var(--accent);border-right:2px solid var(--accent);}
+.map-corner.bl{bottom:12px;left:12px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent);}
+.map-corner.br{bottom:12px;right:12px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
+
+.map-hud-tl{position:absolute;top:16px;left:16px;z-index:10;font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;pointer-events:none;}
+.map-hud-tr{position:absolute;top:16px;right:16px;z-index:10;font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;text-align:right;pointer-events:none;}
+.map-hud-tr span,.map-hud-tl span{color:var(--accent);}
+
+/* ══ AI THREAT PANEL (right side) ══ */
+#ai-panel{width:320px;flex-shrink:0;border-left:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column;z-index:10;transition:transform .5s cubic-bezier(.22,1,.36,1), opacity .5s ease;}
+.aip-header{padding:14px 16px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.2);position:relative;flex-shrink:0;}
+.aip-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--a3);box-shadow:var(--glow3);}
+.aip-title{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:3px;color:var(--tbright);}
+.aip-sub{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:1px;margin-top:3px;}
+
+/* Network threat status */
+.threat-status-card{margin:14px;padding:14px;border:1px solid var(--border2);background:rgba(0,0,0,.3);clip-path:polygon(10px 0%,100% 0%,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);transition:all .4s;flex-shrink:0;}
+.threat-status-card.clear{border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.04);}
+.threat-status-card.caution{border-color:rgba(255,170,0,.35);background:rgba(255,170,0,.05);}
+.threat-status-card.threat{border-color:rgba(255,60,60,.45);background:rgba(255,60,60,.07);animation:alert-pulse 1.2s ease-in-out infinite;}
+@keyframes alert-pulse{0%,100%{box-shadow:none;}50%{box-shadow:0 0 20px rgba(255,60,60,.2);}}
+.ts-level-label{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;margin-bottom:6px;}
+.ts-level{font-family:var(--fd);font-size:20px;font-weight:900;letter-spacing:4px;}
+.ts-level.clear{color:var(--a2);text-shadow:var(--glow2);}
+.ts-level.caution{color:var(--a4);text-shadow:0 0 14px rgba(255,170,0,.5);}
+.ts-level.threat{color:var(--a3);text-shadow:var(--glow3);}
+.ts-meta{display:flex;gap:14px;margin-top:10px;}
+.ts-meta-item label{font-family:var(--fm);font-size:8px;color:var(--tdim);letter-spacing:1px;display:block;margin-bottom:3px;}
+.ts-meta-item .v{font-family:var(--fm);font-size:12px;color:var(--text);}
+
+/* Confidence bar */
+.conf-row{display:flex;align-items:center;gap:10px;padding:0 14px;margin-top:2px;flex-shrink:0;}
+.conf-lbl{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:1px;width:80px;flex-shrink:0;}
+.conf-wrap{flex:1;height:5px;background:rgba(0,207,255,.06);border:1px solid var(--border2);overflow:hidden;}
+.conf-bar{height:100%;background:linear-gradient(90deg,var(--a2),var(--accent));transition:width .5s ease;}
+.conf-val{font-family:var(--fm);font-size:11px;color:var(--accent);width:36px;text-align:right;flex-shrink:0;}
+
+/* Sim controls */
+.sim-row{display:flex;gap:8px;padding:10px 14px;flex-shrink:0;}
+.sim-btn{flex:1;padding:7px;background:transparent;font-family:var(--fm);font-size:9px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid;}
+.sim-btn.s-threat{border-color:rgba(255,60,60,.35);color:var(--a3);}
+.sim-btn.s-threat:hover{background:rgba(255,60,60,.08);}
+.sim-btn.s-caution{border-color:rgba(255,170,0,.35);color:var(--a4);}
+.sim-btn.s-caution:hover{background:rgba(255,170,0,.06);}
+.sim-btn.s-clear{border-color:rgba(0,255,136,.25);color:var(--a2);}
+.sim-btn.s-clear:hover{background:rgba(0,255,136,.05);}
+
+/* Detection event feed */
+.feed-header{padding:8px 14px 6px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.feed-title{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;}
+.feed-count{font-family:var(--fm);font-size:9px;color:var(--accent);}
+.feed-list{flex:1;overflow-y:auto;padding:6px 0;}
+.feed-list::-webkit-scrollbar{width:2px;}
+.feed-list::-webkit-scrollbar-thumb{background:var(--border3);}
+.feed-item{padding:8px 14px;border-bottom:1px solid rgba(12,30,46,.6);display:flex;flex-direction:column;gap:3px;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;background:rgba(0,207,255,.06);}to{opacity:1;background:transparent;}}
+.fi-top{display:flex;align-items:center;justify-content:space-between;}
+.fi-bot{font-family:var(--fm);font-size:10px;font-weight:600;}
+.fi-bot.threat{color:var(--a3);}
+.fi-bot.caution{color:var(--a4);}
+.fi-bot.clear{color:var(--a2);}
+.fi-time{font-family:var(--fm);font-size:9px;color:var(--tdim);}
+.fi-msg{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:.5px;}
+.fi-conf{font-family:var(--fm);font-size:9px;color:var(--accent);}
+
+/* AI model info */
+.ai-model-strip{padding:10px 14px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0;}
+.ams-item label{font-family:var(--fm);font-size:8px;color:var(--tdim);letter-spacing:1px;display:block;margin-bottom:3px;}
+.ams-item .v{font-family:var(--fm);font-size:11px;color:var(--a2);}
+
+/* ══ UNIT DRAWER ══ */
+#unit-drawer{position:absolute;top:0;left:0;bottom:0;width:560px;background:rgba(5,10,18,.97);border-right:1px solid var(--border3);z-index:500;transform:translateX(-100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;backdrop-filter:blur(12px);}
+#unit-drawer.open{transform:translateX(0);}
+.ud-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;}
+.ud-title{font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:3px;color:var(--tbright);}
+.ud-close{background:transparent;border:1px solid var(--border2);color:var(--tdim);font-family:var(--fm);font-size:10px;padding:5px 12px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.ud-close:hover{border-color:var(--a3);color:var(--a3);}
+
+/* Search */
+.ud-search{padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;gap:10px;align-items:center;}
+.ud-search-wrap{flex:1;position:relative;}
+.ud-search-wrap input{width:100%;background:rgba(0,207,255,.04);border:1px solid var(--border2);color:var(--text);font-family:var(--fm);font-size:11px;padding:9px 12px 9px 32px;outline:none;transition:all .2s;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.ud-search-wrap input:focus{border-color:var(--accent);background:rgba(0,207,255,.06);}
+.ud-search-wrap input::placeholder{color:var(--tdim);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--tdim);font-size:12px;pointer-events:none;}
+.ud-filter{display:flex;gap:6px;}
+.filter-btn{background:transparent;border:1px solid var(--border2);color:var(--tdim);font-family:var(--fm);font-size:9px;padding:5px 10px;cursor:pointer;transition:all .15s;clip-path:polygon(4px 0%,100% 0%,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);}
+.filter-btn.active,.filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* Unit sections */
+.ud-units{flex:1;overflow-y:auto;padding:12px 20px;}
+.ud-units::-webkit-scrollbar{width:3px;}
+.ud-units::-webkit-scrollbar-thumb{background:var(--border3);}
+.unit-section{margin-bottom:20px;}
+.unit-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.ush-left{display:flex;align-items:center;gap:10px;}
+.ush-label{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:3px;color:var(--tbright);}
+.ush-count{font-family:var(--fm);font-size:9px;color:var(--tdim);padding:2px 8px;border:1px solid var(--border2);}
+.ush-status{font-family:var(--fm);font-size:9px;padding:2px 10px;}
+.ush-status.online{color:var(--a2);border:1px solid rgba(0,255,136,.2);background:rgba(0,255,136,.06);}
+.ush-status.partial{color:var(--a4);border:1px solid rgba(255,170,0,.2);background:rgba(255,170,0,.05);}
+
+/* Bot cards grid */
+.bot-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.bot-card{padding:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);cursor:pointer;transition:all .2s;position:relative;clip-path:polygon(8px 0%,100% 0%,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);}
+.bot-card:hover{border-color:var(--border3);background:rgba(0,207,255,.04);}
+.bot-card.live{border-color:rgba(0,207,255,.3);}
+.bot-card.live:hover{border-color:var(--accent);box-shadow:var(--glow);}
+.bot-card.alert-card{border-color:rgba(255,60,60,.3);animation:alert-pulse 2s infinite;}
+.bot-card.offline-card{opacity:.55;}
+.bc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.bc-id{font-family:var(--fd);font-size:10px;font-weight:700;color:var(--tbright);letter-spacing:2px;}
+.bc-badge{font-family:var(--fm);font-size:8px;padding:2px 7px;border-radius:1px;}
+.bc-badge.online{color:var(--a2);border:1px solid rgba(0,255,136,.25);background:rgba(0,255,136,.07);}
+.bc-badge.alert{color:var(--a3);border:1px solid rgba(255,60,60,.3);background:rgba(255,60,60,.08);animation:blink 1s infinite;}
+.bc-badge.offline{color:var(--tdim);border:1px solid var(--border2);}
+.bc-badge.standby{color:var(--a4);border:1px solid rgba(255,170,0,.25);background:rgba(255,170,0,.05);}
+.bc-rows{display:flex;flex-direction:column;gap:5px;}
+.bc-row{display:flex;justify-content:space-between;font-family:var(--fm);font-size:9px;}
+.bc-row-l{color:var(--tdim);}
+.bc-row-v{color:var(--text);}
+.bc-row-v.hi{color:var(--accent);}
+.bc-row-v.ok{color:var(--a2);}
+.bc-row-v.warn{color:var(--a3);}
+.bc-live-badge{position:absolute;top:8px;left:-1px;background:var(--accent);color:var(--bg);font-family:var(--fd);font-size:7px;padding:2px 6px;letter-spacing:2px;}
+
+/* ══ OPERATOR CONSOLE (FOCUS MODE) ══ */
+#operator-console{position:fixed;inset:0;background:rgba(2,5,9,.98);backdrop-filter:blur(20px);z-index:4000;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .6s cubic-bezier(.22,1,.36,1);overflow:hidden;}
+.main.focus-mode #operator-console{transform:translateY(0);}
+
+.op-header{padding:16px 32px;border-bottom:1px solid rgba(0,207,255,.2);background:linear-gradient(90deg,rgba(0,0,0,.6),transparent);display:flex;align-items:center;gap:20px;flex-shrink:0;position:relative;}
+.op-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);box-shadow:0 0 15px rgba(0,207,255,.5);}
+.op-id{font-family:var(--fd);font-size:32px;font-weight:900;letter-spacing:6px;color:var(--accent);text-shadow:0 0 10px rgba(0,207,255,.4);}
+.op-name{font-family:var(--fu);font-size:18px;font-weight:600;color:var(--text);letter-spacing:4px;}
+.op-close{margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-family:var(--fm);font-size:10px;padding:8px 20px;cursor:pointer;letter-spacing:4px;transition:all .2s;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.op-close:hover{border-color:var(--a3);color:var(--a3);background:rgba(255,60,60,.08);box-shadow:0 0 15px rgba(255,60,60,.2);}
+.op-demo-banner{background:rgba(255,170,0,.08);border-bottom:1px solid rgba(255,170,0,.2);padding:6px 32px;font-family:var(--fm);font-size:10px;color:var(--a4);letter-spacing:4px;flex-shrink:0;}
+
+.op-grid{display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:1fr;gap:20px;padding:24px 32px;flex:1;overflow:hidden;background:radial-gradient(circle at 35% 45%,rgba(0,207,255,.03) 0%,transparent 70%);}
+.op-col-left{display:flex;flex-direction:column;gap:20px;height:100%;}
+.op-col-right{display:flex;flex-direction:column;gap:20px;height:100%;}
+
+/* Panel inside console */
+.op-panel{background:rgba(4,10,16,.6);border:1px solid rgba(0,207,255,.15);box-shadow:inset 0 0 30px rgba(0,207,255,.02);backdrop-filter:blur(5px);display:flex;flex-direction:column;position:relative;clip-path:polygon(12px 0%,100% 0%,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);}
+.op-panel.hero{border-color:rgba(0,207,255,.3);box-shadow:inset 0 0 40px rgba(0,207,255,.05), 0 0 20px rgba(0,207,255,.05);}
+.mp-header{padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;position:relative;background:rgba(0,0,0,.3);}
+.mp-header::before{content:'';position:absolute;left:0;top:-1px;bottom:-1px;width:3px;background:var(--accent);}
+.mp-title{font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:5px;color:rgba(255,255,255,.8);}
+.mp-badge{font-family:var(--fm);font-size:9px;padding:3px 10px;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);letter-spacing:3px;}
+.mp-badge.live{color:var(--a2);border-color:rgba(0,255,136,.3);animation:blink 2s infinite;}
+
+/* Camera panel */
+.cam-area{flex:1;background:#020609;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:360px;}
+.cam-area::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,207,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,207,255,.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+.cam-area::after{content:'';position:absolute;top:50%;left:50%;width:80px;height:80px;transform:translate(-50%,-50%);border:1px solid rgba(0,207,255,.1);border-radius:50%;pointer-events:none;}
+.cam-placeholder{display:flex;flex-direction:column;align-items:center;gap:12px;z-index:2;}
+.cam-icon{width:46px;height:46px;border:1px solid rgba(0,207,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:rgba(0,207,255,.6);animation:icon-pulse 3s ease-in-out infinite;}
+@keyframes icon-pulse{0%,100%{border-color:rgba(0,207,255,.3);}50%{border-color:var(--accent);box-shadow:var(--glow);}}
+.cam-txt{font-family:var(--fm);font-size:10px;color:rgba(255,255,255,.5);letter-spacing:3px;text-align:center;line-height:1.6;}
+.cam-corners .c{position:absolute;width:14px;height:14px;}
+.cam-corners .c.tl{top:8px;left:8px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+.cam-corners .c.tr{top:8px;right:8px;border-top:2px solid var(--accent);border-right:2px solid var(--accent);}
+.cam-corners .c.bl{bottom:8px;left:8px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent);}
+.cam-corners .c.br{bottom:8px;right:8px;border-bottom:2px solid var(--accent);border-right:2px solid var(--accent);}
+.rec-chip{position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:5px;font-family:var(--fm);font-size:8px;color:var(--a3);background:rgba(4,8,14,.8);padding:3px 7px;z-index:3;}
+.rec-chip .rd{width:6px;height:6px;background:var(--a3);border-radius:50%;animation:blink 1s infinite;}
+.cam-controls{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--panel2);}
+.cam-controls input{flex:1;background:rgba(0,207,255,.04);border:1px solid var(--border2);color:var(--text);font-family:var(--fm);font-size:10px;padding:7px 10px;outline:none;}
+.cam-controls input:focus{border-color:var(--accent);}
+.cam-controls input::placeholder{color:var(--tdim);}
+.cbtn{background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--fm);font-size:9px;padding:7px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.cbtn:hover{background:rgba(0,207,255,.08);}
+.cbtn.disc{border-color:var(--a3);color:var(--a3);}
+.cbtn.disc:hover{background:rgba(255,60,60,.07);}
+
+/* AI mini panel (Expert Typography) */
+.ai-mini{padding:16px 20px;display:flex;flex-direction:column;gap:16px;}
+.aim-status{display:flex;align-items:center;gap:20px;padding:16px 20px;border:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.4);clip-path:polygon(8px 0%,100% 0%,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:all .4s;}
+.aim-status.detected{border-color:rgba(255,60,60,.3);background:rgba(255,60,60,.05);box-shadow:0 0 20px rgba(255,60,60,.05);}
+.aim-status.clear{border-color:rgba(0,255,136,.15);background:rgba(0,255,136,.02);}
+.aim-icon{font-size:32px;line-height:1;}
+.aim-val-wrapper{display:flex;flex-direction:column;justify-content:center;}
+.aim-label{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:4px;margin-bottom:4px;}
+.aim-val{font-family:var(--fd);font-size:24px;font-weight:900;letter-spacing:4px;line-height:1;}
+.aim-val.yes{color:var(--a3);text-shadow:var(--glow3);}
+.aim-val.no{color:var(--a2);text-shadow:0 0 10px rgba(0,255,136,.2);}
+.aim-conf-row{display:flex;align-items:center;gap:16px;}
+.aim-conf-lbl{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);width:90px;flex-shrink:0;letter-spacing:3px;}
+.aim-conf-wrap{flex:1;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;}
+.aim-conf-bar{height:100%;background:linear-gradient(90deg,var(--a2),var(--accent));transition:width .5s;box-shadow:0 0 10px var(--accent);}
+.aim-conf-val{font-family:var(--fd);font-size:12px;color:var(--accent);width:40px;text-align:right;}
+
+/* Advanced Radar Panel (Expert SVG/CSS) */
+.adv-radar-panel{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;padding:20px;flex:1;align-items:center;}
+.rad-viz-box{position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(0,207,255,.05) 0%,transparent 65%);border:1px solid rgba(0,207,255,.05);border-radius:50%;padding:10px;aspect-ratio:1;}
+.rad-stats-box{display:flex;flex-direction:column;gap:12px;}
+.rs-group{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.03);padding:12px 16px;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.rs-lbl{font-family:var(--fm);font-size:8px;color:rgba(255,255,255,.4);letter-spacing:3px;margin-bottom:6px;}
+.rs-val{font-family:var(--fd);font-size:20px;letter-spacing:2px;line-height:1;}
+.rs-val.hi{color:var(--accent);text-shadow:0 0 10px rgba(0,207,255,.5);}
+.rs-val.warn{color:var(--a3);text-shadow:0 0 10px rgba(255,60,60,.5);}
+.rs-val.ok{color:var(--a2);text-shadow:0 0 10px rgba(0,255,136,.3);}
+.rs-bar-wrap{height:3px;background:rgba(255,255,255,.05);margin-top:8px;border-radius:2px;overflow:hidden;}
+.rs-bar{height:100%;transition:width .3s ease-out;box-shadow:0 0 8px currentColor;}
+.rad-grid{width:100%;height:100%;position:absolute;inset:0;}
+.rad-sweep{transform-origin:50% 50%;animation:sweep 3s linear infinite;}
+@keyframes sweep{to{transform:rotate(360deg);}}
+.rad-blip{animation:blip-pulse 1s infinite;opacity:0;transition:opacity 0.2s;}
+@keyframes blip-pulse{0%,100%{filter:drop-shadow(0 0 6px var(--accent));transform:scale(1);}50%{filter:drop-shadow(0 0 12px var(--accent));transform:scale(1.3);}}
+.gps-coords{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.gc-item label{font-family:var(--fm);font-size:8px;color:var(--tdim);letter-spacing:1px;display:block;margin-bottom:3px;}
+.gc-item .v{font-family:var(--fm);font-size:11px;color:var(--accent);}
+
+/* Radar mini panel */
+.radar-panel{padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.radar-viz{display:flex;justify-content:center;}
+.radar-svg-wrap{width:110px;height:110px;}
+.radar-sweep-g{transform-origin:55px 55px;animation:radar-spin 2.2s linear infinite;}
+@keyframes radar-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.radar-rows{display:flex;flex-direction:column;gap:7px;}
+.rr{display:flex;justify-content:space-between;font-family:var(--fm);font-size:10px;}
+.rr-l{color:var(--tdim);}
+.rr-v{color:var(--tbright);}
+.rr-v.ok{color:var(--a2);}
+.rr-v.warn{color:var(--a3);}
+.rr-v.hi{color:var(--accent);}
+
+/* Event log panel */
+.elog{padding:0;display:flex;flex-direction:column;height:100%;}
+.elog-body{flex:1;overflow-y:auto;max-height:200px;}
+.elog-body::-webkit-scrollbar{width:2px;}
+.elog-body::-webkit-scrollbar-thumb{background:var(--border3);}
+.elog-entry{display:flex;gap:10px;padding:7px 16px;border-bottom:1px solid rgba(12,30,46,.5);font-family:var(--fm);font-size:9px;animation:fadeIn .3s ease;}
+.elog-time{color:var(--tdim);flex-shrink:0;}
+.elog-msg{color:var(--text);}
+.elog-msg.ok{color:var(--a2);}
+.elog-msg.warn{color:var(--a4);}
+.elog-msg.err{color:var(--a3);}
+
+/* Dummy bot modal */
+.dummy-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:1px;background:var(--border);flex:1;}
+.dummy-panel{background:var(--panel);display:flex;flex-direction:column;}
+.dummy-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;}
+.ds-item{padding:12px;border:1px solid var(--border);background:rgba(0,0,0,.2);clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.ds-item label{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:1px;display:block;margin-bottom:6px;}
+.ds-item .v{font-family:var(--fm);font-size:14px;color:var(--text);}
+.ds-item .v.ok{color:var(--a2);}
+.ds-item .v.hi{color:var(--accent);}
+.ds-item .v.warn{color:var(--a4);}
+.dummy-radar{padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.dummy-elog{flex:1;overflow-y:auto;padding:0;min-height:150px;}
+.dummy-elog::-webkit-scrollbar{width:2px;}
+.dummy-elog::-webkit-scrollbar-thumb{background:var(--border3);}
+
+/* Leaflet bot marker */
+.bot-map-marker{width:28px;height:28px;position:relative;cursor:pointer;}
+.bmm-core{width:14px;height:14px;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;}
+.bmm-ring{width:28px;height:28px;border-radius:50%;border:1px solid;position:absolute;top:0;left:0;animation:mmring 2s ease-out infinite;opacity:0;}
+@keyframes mmring{0%{transform:scale(.5);opacity:.8;}100%{transform:scale(1.4);opacity:0;}}
+.bmm-online .bmm-core{background:var(--a2);box-shadow:var(--glow2);}
+.bmm-online .bmm-ring{border-color:var(--a2);}
+.bmm-alert .bmm-core{background:var(--a3);box-shadow:var(--glow3);}
+.bmm-alert .bmm-ring{border-color:var(--a3);animation-duration:1s;}
+.bmm-offline .bmm-core{background:var(--tdim);box-shadow:none;}
+.bmm-offline .bmm-ring{display:none;}
+.bmm-standby .bmm-core{background:var(--a4);}
+.bmm-standby .bmm-ring{border-color:var(--a4);}
+
+.leaflet-popup-content-wrapper{background:rgba(7,15,23,.97)!important;border:1px solid var(--border3)!important;border-radius:0!important;color:var(--text)!important;font-family:var(--fm)!important;font-size:10px!important;padding:0!important;}
+.leaflet-popup-content{margin:10px 14px!important;color:var(--text)!important;}
+.leaflet-popup-tip{background:rgba(7,15,23,.97)!important;}
+.popup-id{font-family:var(--fd);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:2px;margin-bottom:4px;}
+.popup-row{display:flex;justify-content:space-between;gap:16px;margin-top:2px;}
+.popup-row span:first-child{color:var(--tdim);}
+.popup-btn{width:100%;margin-top:8px;padding:6px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:var(--fm);font-size:9px;cursor:pointer;letter-spacing:2px;transition:all .2s;}
+.popup-btn:hover{background:rgba(0,207,255,.1);}
+/* ══ RADAR DEEP-DIVE OVERLAY ══ */
+#radar-deep-dive{position:fixed;inset:0;background:rgba(2,4,8,.98);backdrop-filter:blur(24px);z-index:5000;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .5s cubic-bezier(.22,1,.36,1);overflow:hidden;}
+.main.radar-mode #radar-deep-dive{transform:translateX(0);}
+.rdv-header{display:flex;align-items:center;gap:20px;padding:14px 32px;border-bottom:1px solid rgba(0,207,255,.15);background:rgba(0,0,0,.5);flex-shrink:0;position:relative;}
+.rdv-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);box-shadow:0 0 15px rgba(0,207,255,.6);}
+.rdv-title{font-family:var(--fd);font-size:13px;font-weight:900;letter-spacing:6px;color:var(--accent);text-shadow:0 0 12px rgba(0,207,255,.4);}
+.rdv-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:3px;}
+.rdv-badge{font-family:var(--fm);font-size:9px;padding:4px 12px;border:1px solid rgba(0,255,136,.3);color:var(--a2);letter-spacing:3px;animation:blink 2s infinite;}
+.rdv-badge.offline{border-color:rgba(255,60,60,.3);color:var(--a3);animation:none;}
+.rdv-back{margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-family:var(--fm);font-size:10px;padding:8px 20px;cursor:pointer;letter-spacing:4px;transition:all .2s;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.rdv-back:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,207,255,.06);}
+.rdv-body{display:grid;grid-template-columns:1.1fr 1fr;grid-template-rows:auto auto;gap:20px;padding:24px 32px 32px;flex:1;overflow-y:auto;overflow-x:hidden;}
+.rdv-body::-webkit-scrollbar{width:3px;}
+.rdv-body::-webkit-scrollbar-thumb{background:rgba(0,207,255,.3);border-radius:2px;}
+.rdv-polar-wrap{grid-row:1;grid-column:1;display:flex;flex-direction:column;background:rgba(4,10,16,.6);border:1px solid rgba(0,207,255,.12);clip-path:polygon(12px 0%,100% 0%,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);}
+.rdv-telem-wrap{grid-row:1;grid-column:2;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+.rdv-chart-wrap{grid-row:2;grid-column:1/3;background:rgba(4,10,16,.6);border:1px solid rgba(0,207,255,.12);clip-path:polygon(10px 0%,100% 0%,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);padding:16px 20px;display:flex;flex-direction:column;gap:12px;min-height:220px;}
+.rdv-sec-title{font-family:var(--fd);font-size:10px;letter-spacing:5px;color:rgba(255,255,255,.5);padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;}
+.rdv-polar-svg-wrap{display:flex;align-items:center;justify-content:center;padding:16px;}
+.rdv-polar-svg-wrap svg{width:min(100%,calc(100vh - 200px));height:auto;aspect-ratio:1;display:block;}
+
+/* Telemetry tiles */
+.rdv-tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.rdv-tile{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.04);padding:14px 16px;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.rdv-tile.wide{grid-column:1/3;}
+.rdv-t-lbl{font-family:var(--fm);font-size:8px;color:rgba(255,255,255,.4);letter-spacing:3px;margin-bottom:6px;}
+.rdv-t-val{font-family:var(--fd);font-size:18px;letter-spacing:2px;line-height:1;}
+.rdv-t-val.ok{color:var(--a2);text-shadow:0 0 10px rgba(0,255,136,.3);}
+.rdv-t-val.warn{color:var(--a3);text-shadow:0 0 10px rgba(255,60,60,.3);}
+.rdv-t-val.hi{color:var(--accent);text-shadow:0 0 10px rgba(0,207,255,.3);}
+.rdv-t-val.amber{color:var(--a4);text-shadow:0 0 10px rgba(255,170,0,.3);}
+.rdv-bar-v-wrap{height:44px;display:flex;align-items:flex-end;gap:2px;margin-top:8px;}
+.rdv-bar-v-seg{flex:1;transition:height .15s ease-out;border-radius:1px 1px 0 0;min-height:3px;}
+.rdv-bar-h-wrap{height:5px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-top:6px;}
+.rdv-bar-h-fill{height:100%;transition:width .3s ease-out;border-radius:2px;}
+
+/* Gate heatmap */
+.rdv-gate-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-top:4px;}
+.rdv-gate-cell{height:20px;border-radius:2px;transition:background .3s;position:relative;}
+.rdv-gate-lbl-row{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-top:3px;}
+.rdv-gate-lbl{font-family:var(--fm);font-size:7px;color:rgba(255,255,255,.3);text-align:center;letter-spacing:1px;}
+
+/* Rolling chart */
+.rdv-chart-legend{display:flex;gap:20px;font-family:var(--fm);font-size:9px;}
+.rdv-chart-legend span{display:flex;align-items:center;gap:6px;}
+.rdv-legend-dot{width:8px;height:2px;border-radius:1px;}
+.rdv-chart-svg-wrap{flex:1;min-height:80px;}
+.rdv-chart-svg-wrap svg{width:100%;height:100%;}
+
+/* Clickable glow on radar panel in HUD */
+.adv-radar-panel-clickable{cursor:pointer;transition:box-shadow .3s;}
+.adv-radar-panel-clickable:hover .rad-viz-box{box-shadow:0 0 25px rgba(0,207,255,.2);border-color:rgba(0,207,255,.3);}
+.adv-radar-panel-clickable::after{content:'⤢ EXPAND';font-family:var(--fm);font-size:7px;letter-spacing:2px;color:rgba(0,207,255,.4);position:absolute;bottom:8px;right:10px;}
+
+/* ══ CAMERA MODE SELECTOR ══ */
+.cam-mode-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:4500;display:none;align-items:center;justify-content:center;gap:40px;}
+.cam-mode-overlay.active{display:flex;}
+.cam-mode-card{width:320px;padding:40px 32px;background:rgba(4,10,16,.9);border:1px solid rgba(0,207,255,.15);cursor:pointer;text-align:center;clip-path:polygon(14px 0%,100% 0%,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);transition:all .3s;}
+.cam-mode-card:hover{border-color:var(--accent);box-shadow:0 0 30px rgba(0,207,255,.15);transform:translateY(-4px);}
+.cam-mode-card .cm-icon{font-size:48px;margin-bottom:20px;filter:drop-shadow(0 0 12px rgba(0,207,255,.4));}
+.cam-mode-card .cm-title{font-family:var(--fd);font-size:14px;letter-spacing:5px;color:var(--accent);margin-bottom:8px;}
+.cam-mode-card .cm-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:3px;line-height:1.8;}
+.cam-mode-card.ai-card{border-color:rgba(0,255,136,.15);}
+.cam-mode-card.ai-card:hover{border-color:var(--a2);box-shadow:0 0 30px rgba(0,255,136,.15);}
+.cam-mode-card.ai-card .cm-icon{filter:drop-shadow(0 0 12px rgba(0,255,136,.4));}
+.cam-mode-card.ai-card .cm-title{color:var(--a2);}
+.cam-mode-close{position:absolute;top:24px;right:32px;background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-family:var(--fm);font-size:10px;padding:8px 20px;cursor:pointer;letter-spacing:4px;}
+.cam-mode-close:hover{border-color:var(--accent);color:var(--accent);}
+.cam-mode-label{position:absolute;top:30px;left:32px;font-family:var(--fd);font-size:12px;letter-spacing:6px;color:rgba(255,255,255,.4);}
+
+/* ══ FULL-SCREEN CAMERA TERMINALS ══ */
+.cam-terminal{position:fixed;inset:0;background:rgba(2,4,8,.98);backdrop-filter:blur(24px);z-index:5500;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .5s cubic-bezier(.22,1,.36,1);overflow:hidden;}
+.cam-terminal.active{transform:translateX(0);}
+.ct-header{display:flex;align-items:center;gap:20px;padding:14px 32px;border-bottom:1px solid rgba(0,207,255,.15);background:rgba(0,0,0,.5);flex-shrink:0;position:relative;}
+.ct-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;box-shadow:0 0 15px rgba(0,207,255,.6);}
+.ct-header.esp::before{background:var(--accent);}
+.ct-header.ai::before{background:var(--a2);}
+.ct-title{font-family:var(--fd);font-size:13px;font-weight:900;letter-spacing:6px;text-shadow:0 0 12px rgba(0,207,255,.4);}
+.ct-header.esp .ct-title{color:var(--accent);}
+.ct-header.ai .ct-title{color:var(--a2);}
+.ct-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:3px;}
+.ct-badge{font-family:var(--fm);font-size:9px;padding:4px 12px;border:1px solid rgba(0,207,255,.3);color:var(--accent);letter-spacing:3px;}
+.ct-badge.connected{border-color:rgba(0,255,136,.4);color:var(--a2);animation:blink 2s infinite;}
+.ct-back{margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-family:var(--fm);font-size:10px;padding:8px 20px;cursor:pointer;letter-spacing:4px;transition:all .2s;}
+.ct-back:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,207,255,.06);}
+.ct-body{flex:1;display:flex;overflow:hidden;}
+.ct-feed{flex:1;background:#000;position:relative;display:flex;align-items:center;justify-content:center;}
+.ct-feed::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);pointer-events:none;z-index:10;}
+.ct-feed img{width:100%;height:100%;object-fit:contain;z-index:1;}
+.ct-feed .cam-placeholder{position:absolute;text-align:center;z-index:2;}
+.ct-sidebar{width:300px;min-width:300px;background:rgba(4,10,16,.6);border-left:1px solid rgba(0,207,255,.12);padding:16px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
+.ct-sidebar::-webkit-scrollbar{width:3px;}
+.ct-sidebar::-webkit-scrollbar-thumb{background:rgba(0,207,255,.3);border-radius:2px;}
+.ct-stat{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.04);padding:10px 12px;}
+.ct-stat-lbl{font-family:var(--fm);font-size:7px;color:rgba(255,255,255,.35);letter-spacing:3px;margin-bottom:4px;}
+.ct-stat-val{font-family:monospace;font-feature-settings:"tnum";font-size:15px;letter-spacing:2px;line-height:1;}
+.ct-stat-val.cyan{color:var(--accent);text-shadow:0 0 8px rgba(0,207,255,.3);}
+.ct-stat-val.green{color:var(--a2);text-shadow:0 0 8px rgba(0,255,136,.3);}
+.ct-stat-val.red{color:var(--a3);text-shadow:0 0 8px rgba(255,60,60,.3);}
+.ct-stat-val.amber{color:var(--a4);text-shadow:0 0 8px rgba(255,170,0,.3);}
+.ct-stat.live-pulse{border-color:rgba(0,255,136,.12);animation:statPulse 2s infinite;}
+@keyframes statPulse{0%,100%{border-color:rgba(0,255,136,.12);}50%{border-color:rgba(0,255,136,.3);}}
+.ct-stat.threat-pulse{border-color:rgba(255,60,60,.2);animation:threatPulse 1s infinite;}
+@keyframes threatPulse{0%,100%{border-color:rgba(255,60,60,.2);}50%{border-color:rgba(255,60,60,.5);box-shadow:0 0 12px rgba(255,60,60,.1);}}
+.ct-stat-row{display:flex;gap:8px;}
+.ct-stat-row .ct-stat{flex:1;}
+.ct-sec-label{font-family:var(--fm);font-size:7px;color:rgba(0,207,255,.4);letter-spacing:4px;padding:4px 0;border-bottom:1px solid rgba(0,207,255,.08);margin-top:4px;}
+.ct-connect-bar{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);}
+.ct-connect-bar input{flex:1;min-width:120px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);color:#fff;font-family:var(--fm);font-size:10px;padding:8px 10px;letter-spacing:1px;}
+.ct-connect-bar button{background:rgba(0,207,255,.1);border:1px solid rgba(0,207,255,.3);color:var(--accent);font-family:var(--fm);font-size:9px;padding:8px 14px;cursor:pointer;letter-spacing:2px;white-space:nowrap;}
+.ct-connect-bar button:hover{background:rgba(0,207,255,.2);}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login">
+  <div class="l-bg-glow"></div>
+  <div class="l-rings">
+    <div class="l-ring"></div><div class="l-ring"></div>
+    <div class="l-ring"></div><div class="l-ring"></div>
+  </div>
+  <div class="l-box">
+    <div class="l-logo">SENTINEL</div>
+    <div class="l-ver">MULTI-BOT COMMAND SYSTEM v3.0</div>
+    <div class="l-field"><label>OPERATOR ID</label><input type="text" id="lu" placeholder="operator id" autocomplete="off"></div>
+    <div class="l-field"><label>ACCESS CODE</label><input type="password" id="lp" placeholder="access code"></div>
+    <div class="l-err" id="lerr"></div>
+    <button class="l-btn" onclick="doLogin()">AUTHENTICATE</button>
+    <div class="l-hint">Demo: <span>admin</span> / <span>1234</span></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">SENTINEL</div>
+    <div class="tb-sep">|</div>
+    <div class="tb-sub">COMMAND v3.0</div>
+    <div class="tb-pills">
+      <div class="tb-pill"><div class="dot"></div>FIREBASE</div>
+      <div class="tb-pill"><div class="dot"></div>GPS NET</div>
+      <div class="tb-pill"><div class="dot warn" id="net-alert-dot"></div><span id="net-alert-lbl">NETWORK CLEAR</span></div>
+    </div>
+    <button class="tb-navbtn" id="units-btn" onclick="toggleDrawer()">⬡ NETWORK UNITS</button>
+    <div class="tb-clock" id="clock">--:--:--</div>
+    <div class="tb-session">SESSION: <span id="sess-user">--</span></div>
+    <button class="tb-navbtn" onclick="doLogout()">LOGOUT</button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- UNIT DRAWER -->
+    <div id="unit-drawer">
+      <div class="ud-header">
+        <div class="ud-title">NETWORK UNITS</div>
+        <button class="ud-close" onclick="toggleDrawer()">✕ CLOSE</button>
+      </div>
+      <div class="ud-search">
+        <div class="ud-search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="bot-search" placeholder="Search by BOT ID or status..." oninput="filterBots()">
+        </div>
+        <div class="ud-filter">
+          <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+          <button class="filter-btn" onclick="setFilter('online',this)">ONLINE</button>
+          <button class="filter-btn" onclick="setFilter('alert',this)">ALERT</button>
+          <button class="filter-btn" onclick="setFilter('offline',this)">OFFLINE</button>
+        </div>
+      </div>
+      <div class="ud-units" id="ud-units-body">
+        <!-- injected by JS -->
+      </div>
+    </div>
+
+    <!-- MAP -->
+    <div id="map-layer">
+      <div id="leaflet-map"></div>
+      <div class="map-corner tl"></div>
+      <div class="map-corner tr"></div>
+      <div class="map-corner bl"></div>
+      <div class="map-corner br"></div>
+      <div class="map-hud-tl">TACTICAL MAP · NETWORK VIEW<br><span id="map-bots-count">-- UNITS TRACKED</span></div>
+      <div class="map-hud-tr">COORD: <span id="map-cursor-coord">--°N --°E</span><br>ZOOM: <span id="map-zoom">--</span></div>
+    </div>
+
+    <!-- AI THREAT PANEL -->
+    <div id="ai-panel">
+      <div class="aip-header">
+        <div class="aip-title">AI THREAT MONITOR</div>
+        <div class="aip-sub">NETWORK-WIDE · YOLOv8s · ALL UNITS</div>
+      </div>
+
+      <div class="threat-status-card clear" id="tsc">
+        <div class="ts-level-label">THREAT LEVEL</div>
+        <div class="ts-level clear" id="ts-level">CLEAR</div>
+        <div class="ts-meta">
+          <div class="ts-meta-item"><label>SOURCE</label><div class="v" id="ts-src">—</div></div>
+          <div class="ts-meta-item"><label>TIME</label><div class="v" id="ts-time">--:--:--</div></div>
+          <div class="ts-meta-item"><label>EVENTS</label><div class="v" id="ts-events">0</div></div>
+        </div>
+      </div>
+
+      <div class="conf-row">
+        <div class="conf-lbl">CONFIDENCE</div>
+        <div class="conf-wrap"><div class="conf-bar" id="net-conf-bar" style="width:0%"></div></div>
+        <div class="conf-val" id="net-conf-val">0.00</div>
+      </div>
+
+      <div class="sim-row">
+        <button class="sim-btn s-threat" onclick="netThreat('threat')">▶ THREAT</button>
+        <button class="sim-btn s-caution" onclick="netThreat('caution')">▶ CAUTION</button>
+        <button class="sim-btn s-clear" onclick="netThreat('clear')">▶ CLEAR</button>
+      </div>
+
+      <div class="feed-header">
+        <div class="feed-title">DETECTION FEED</div>
+        <div class="feed-count" id="feed-count">0 EVENTS</div>
+      </div>
+      <div class="feed-list" id="feed-list"></div>
+
+      <div class="ai-model-strip">
+        <div class="ams-item"><label>MODEL</label><div class="v">YOLOv8s</div></div>
+        <div class="ams-item"><label>THRESHOLD</label><div class="v">0.70</div></div>
+        <div class="ams-item"><label>INFERENCE</label><div class="v">~8 FPS</div></div>
+        <div class="ams-item"><label>NMS</label><div class="v">AGNOSTIC</div></div>
+      </div>
+    </div>
+
+    <!-- OPERATOR CONSOLE -->
+    <div id="operator-console">
+      <!-- injected by JS -->
+    </div>
+
+    <!-- RADAR DEEP-DIVE TERMINAL -->
+    <div id="radar-deep-dive">
+      <div class="rdv-header">
+        <div>
+          <div class="rdv-title">HLK-LD2410C / RADAR TERMINAL</div>
+          <div class="rdv-sub">24GHz MILLIMETER-WAVE PRESENCE SENSOR — BOT-01</div>
+        </div>
+        <div class="rdv-badge" id="rdv-conn-badge">● SENSOR CONNECTED</div>
+        <button class="rdv-back" onclick="closeRadarDeepDive()">← BACK TO HUD</button>
+      </div>
+
+      <div class="rdv-body">
+
+        <!-- SECTION 1: Circular Radar Visualization -->
+        <div class="rdv-polar-wrap">
+          <div class="rdv-sec-title">⬡ CIRCULAR DETECTION FIELD — 360° / 6m RANGE / HLK-LD2410C</div>
+          <div class="rdv-polar-svg-wrap">
+            <svg id="rdv-polar-svg" viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" overflow="visible">
+              <defs>
+                <radialGradient id="rdvBgGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,207,255,0.12)"/>
+                  <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
+                </radialGradient>
+                <radialGradient id="rdvSweepGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,207,255,0.25)"/>
+                  <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
+                </radialGradient>
+              </defs>
+              <!-- Background fill -->
+              <circle cx="110" cy="110" r="100" fill="url(#rdvBgGrad)"/>
+              <!-- Static range rings (full circles) injected by JS -->
+              <g id="rdv-range-rings"></g>
+              <!-- Crosshair lines -->
+              <line x1="110" y1="10" x2="110" y2="210" stroke="rgba(0,207,255,0.08)" stroke-width="0.8" stroke-dasharray="2,4"/>
+              <line x1="10" y1="110" x2="210" y2="110" stroke="rgba(0,207,255,0.08)" stroke-width="0.8" stroke-dasharray="2,4"/>
+              <!-- 45° diagonal dashes -->
+              <line x1="39" y1="39" x2="181" y2="181" stroke="rgba(0,207,255,0.04)" stroke-width="0.6" stroke-dasharray="2,6"/>
+              <line x1="181" y1="39" x2="39" y2="181" stroke="rgba(0,207,255,0.04)" stroke-width="0.6" stroke-dasharray="2,6"/>
+              <!-- Range labels -->
+              <g id="rdv-range-labels"></g>
+              <!-- Full 360° sweep arm (rotating) -->
+              <g id="rdv-sweep-arm" style="transform-origin:110px 110px;animation:rdvSweep360 1.5s linear infinite;">
+                <!-- Volumetric sweep cone -->
+                <path d="M110,110 L110,15 A95,95 0 0,1 148,22 Z" fill="url(#rdvSweepGrad)"/>
+                <!-- Arm line -->
+                <line x1="110" y1="110" x2="110" y2="15" stroke="var(--accent)" stroke-width="1.5" opacity="0.9" filter="drop-shadow(0 0 3px var(--accent))"/>
+              </g>
+              <!-- Target blip -->
+              <circle id="rdv-target-blip" cx="110" cy="110" r="6" fill="var(--a3)" opacity="0" filter="drop-shadow(0 0 8px #FF3C3C)"/>
+              <circle id="rdv-target-ring" cx="110" cy="110" r="12" fill="none" stroke="var(--a3)" stroke-width="1" opacity="0"/>
+              <!-- Origin dot -->
+              <circle cx="110" cy="110" r="4" fill="var(--accent)" filter="drop-shadow(0 0 8px var(--accent))"/>
+              <!-- Degree tick marks around perimeter -->
+              <g id="rdv-ticks"></g>
+              <!-- Compass labels -->
+              <text x="110" y="8" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">N</text>
+              <text x="214" y="113" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">E</text>
+              <text x="110" y="217" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">S</text>
+              <text x="5" y="113" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">W</text>
+              <!-- BOT-01 label -->
+              <text x="110" y="118" text-anchor="middle" font-family="monospace" font-size="5" fill="rgba(255,255,255,0.3)">BOT-01</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Telemetry -->
+        <div class="rdv-telem-wrap">
+          <div class="rdv-sec-title" style="padding:0;border:none;">⬡ LIVE TELEMETRY</div>
+
+          <!-- Presence + Distance row -->
+          <div class="rdv-tile-grid">
+            <div class="rdv-tile">
+              <div class="rdv-t-lbl">PRESENCE STATE</div>
+              <div class="rdv-t-val ok" id="rdv-presence">CLEAR</div>
+            </div>
+            <div class="rdv-tile">
+              <div class="rdv-t-lbl">TARGET DISTANCE</div>
+              <div class="rdv-t-val hi" id="rdv-distance">-- m</div>
+            </div>
+          </div>
+
+          <!-- Energy VU bars -->
+          <div class="rdv-tile-grid">
+            <div class="rdv-tile">
+              <div class="rdv-t-lbl">MACRO-MOTION ENERGY</div>
+              <div class="rdv-t-val hi" id="rdv-macro-val">0%</div>
+              <div class="rdv-bar-v-wrap" id="rdv-macro-bars"></div>
+            </div>
+            <div class="rdv-tile">
+              <div class="rdv-t-lbl">MICRO-MOTION ENERGY</div>
+              <div class="rdv-t-val amber" id="rdv-micro-val">0%</div>
+              <div class="rdv-bar-v-wrap" id="rdv-micro-bars"></div>
+            </div>
+          </div>
+
+          <!-- RSSI + Mode row -->
+          <div class="rdv-tile-grid">
+            <div class="rdv-tile">
+              <div class="rdv-t-lbl">SIGNAL STRENGTH (RSSI)</div>
+              <div class="rdv-t-val hi" id="rdv-rssi">-- dBm</div>
+              <div class="rdv-bar-h-wrap"><div class="rdv-bar-h-fill" id="rdv-rssi-bar" style="width:0%;background:var(--accent);"></div></div>
+            </div>
+            <div class="rdv-tile">
+              <div class="rdv-t-lbl">SENSOR MODE</div>
+              <div class="rdv-t-val hi" id="rdv-mode">NORMAL</div>
+              <div style="margin-top:8px;font-family:var(--fm);font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;" id="rdv-freq">24.125 GHz</div>
+            </div>
+          </div>
+
+          <!-- Gate Sensitivity Heatmap -->
+          <div class="rdv-tile" style="padding:14px 16px;">
+            <div class="rdv-t-lbl">GATE SENSITIVITY MAP (0.75m / GATE)</div>
+            <div class="rdv-gate-grid" id="rdv-gate-grid"></div>
+            <div class="rdv-gate-lbl-row">
+              <div class="rdv-gate-lbl">G0</div><div class="rdv-gate-lbl">G1</div><div class="rdv-gate-lbl">G2</div>
+              <div class="rdv-gate-lbl">G3</div><div class="rdv-gate-lbl">G4</div><div class="rdv-gate-lbl">G5</div>
+              <div class="rdv-gate-lbl">G6</div><div class="rdv-gate-lbl">G7</div><div class="rdv-gate-lbl">G8</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Rolling 60-second chart -->
+        <div class="rdv-chart-wrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="rdv-sec-title" style="padding:0;border:none;">⬡ 60-SECOND ENERGY HISTORY</div>
+            <div class="rdv-chart-legend">
+              <span><div class="rdv-legend-dot" style="background:#00CFFF;"></div><span style="color:rgba(255,255,255,.5);letter-spacing:2px;">MACRO</span></span>
+              <span><div class="rdv-legend-dot" style="background:#FFAA00;"></div><span style="color:rgba(255,255,255,.5);letter-spacing:2px;">MICRO</span></span>
+            </div>
+          </div>
+          <div class="rdv-chart-svg-wrap">
+            <svg id="rdv-chart-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+              <!-- Y-axis grid lines -->
+              <line x1="0" y1="25" x2="600" y2="25" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+              <line x1="0" y1="50" x2="600" y2="50" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+              <line x1="0" y1="75" x2="600" y2="75" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+              <text x="2" y="25" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">75</text>
+              <text x="2" y="50" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">50</text>
+              <text x="2" y="75" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">25</text>
+              <!-- Data lines rendered by JS -->
+              <polyline id="rdv-chart-macro" fill="none" stroke="#00CFFF" stroke-width="1.5" opacity="0.8"/>
+              <polyline id="rdv-chart-micro" fill="none" stroke="#FFAA00" stroke-width="1.5" opacity="0.8"/>
+              <!-- Detection event markers -->
+              <g id="rdv-chart-events"></g>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end radar-deep-dive -->
+
+    <!-- ══ CAMERA MODE SELECTOR ══ -->
+    <div id="cam-mode-overlay" class="cam-mode-overlay">
+      <div class="cam-mode-label">SELECT SURVEILLANCE MODE</div>
+      <button class="cam-mode-close" onclick="closeCamSelector()">✕ CLOSE</button>
+
+      <div class="cam-mode-card" onclick="openEspCamTerminal()">
+        <div class="cm-icon">📡</div>
+        <div class="cm-title">ESP-CAM</div>
+        <div class="cm-sub">
+          AUTONOMOUS MODE<br>
+          RAW MJPEG FROM BOT<br>
+          ENTER IP ADDRESS<br>
+          WIRELESS SURVEILLANCE
+        </div>
+      </div>
+
+      <div class="cam-mode-card ai-card" onclick="openAiCamTerminal()">
+        <div class="cm-icon">🤖</div>
+        <div class="cm-title">AI-CAM</div>
+        <div class="cm-sub">
+          TETHERED MODE<br>
+          AI-ANNOTATED FEED<br>
+          REAL-TIME BOUNDING BOXES<br>
+          YOLOv8s + ONNX RUNTIME
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ESP-CAM FULL-SCREEN TERMINAL ══ -->
+    <div id="esp-cam-terminal" class="cam-terminal">
+      <div class="ct-header esp">
+        <div>
+          <div class="ct-title">ESP32-CAM / AUTONOMOUS SURVEILLANCE</div>
+          <div class="ct-sub">RAW MJPEG STREAM — WIRELESS EDGE SENSOR — BOT-01</div>
+        </div>
+        <div class="ct-badge" id="esp-ct-badge">● DISCONNECTED</div>
+        <button class="ct-back" onclick="closeEspCamTerminal()">← BACK TO HUD</button>
+      </div>
+      <div class="ct-body">
+        <div class="ct-feed">
+          <div class="cam-placeholder" id="esp-ct-placeholder">
+            <div class="cam-icon" style="font-size:40px;margin-bottom:16px;">📡</div>
+            <div class="cam-txt" style="color:rgba(255,255,255,.4);font-family:var(--fm);font-size:10px;letter-spacing:3px;">ENTER ESP32-CAM IP ADDRESS<br>TO START AUTONOMOUS FEED</div>
+          </div>
+          <img id="esp-ct-img" style="display:none;" alt="ESP32-CAM stream">
+        </div>
+        <div class="ct-sidebar">
+          <div class="ct-sec-label">▎ HARDWARE</div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">MODULE</div><div class="ct-stat-val cyan">OV3660</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">MCU</div><div class="ct-stat-val cyan">ESP32</div></div>
+          </div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">RESOLUTION</div><div class="ct-stat-val cyan">320×240</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">COST</div><div class="ct-stat-val green">$5</div></div>
+          </div>
+
+          <div class="ct-sec-label">▎ NETWORK</div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">PROTOCOL</div><div class="ct-stat-val cyan">MJPEG</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">BAND</div><div class="ct-stat-val cyan">2.4 GHz</div></div>
+          </div>
+          <div class="ct-stat"><div class="ct-stat-lbl">SOCKET MODE</div><div class="ct-stat-val amber">SINGLE CLIENT</div></div>
+
+          <div class="ct-sec-label">▎ OPERATIONAL</div>
+          <div class="ct-stat" id="esp-ct-status-tile"><div class="ct-stat-lbl">LINK STATUS</div><div class="ct-stat-val amber" id="esp-ct-status">OFFLINE</div></div>
+          <div class="ct-stat"><div class="ct-stat-lbl">DEPLOYMENT</div><div class="ct-stat-val cyan">AUTONOMOUS</div></div>
+          <div class="ct-stat"><div class="ct-stat-lbl">AI PROCESSING</div><div class="ct-stat-val amber">OFFLOADED</div></div>
+
+          <div class="ct-connect-bar">
+            <input type="text" id="esp-ct-url" placeholder="http://192.168.1.100:81/stream">
+            <button onclick="connectEspTerminal()">CONNECT</button>
+            <button onclick="disconnectEspTerminal()" style="border-color:rgba(255,60,60,.3);color:var(--a3);">DISC.</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ AI-CAM FULL-SCREEN TERMINAL ══ -->
+    <div id="ai-cam-terminal" class="cam-terminal">
+      <div class="ct-header ai">
+        <div>
+          <div class="ct-title">AI-CAM / TETHERED INFERENCE</div>
+          <div class="ct-sub">YOLOv8s ONNX — REAL-TIME PERSON DETECTION — ANNOTATED RE-STREAM</div>
+        </div>
+        <div class="ct-badge" id="ai-ct-badge">● WAITING FOR SENTINEL</div>
+        <button class="ct-back" onclick="closeAiCamTerminal()">← BACK TO HUD</button>
+      </div>
+      <div class="ct-body">
+        <div class="ct-feed">
+          <div class="cam-placeholder" id="ai-ct-placeholder">
+            <div class="cam-icon" style="font-size:40px;margin-bottom:16px;">🤖</div>
+            <div class="cam-txt" style="color:rgba(255,255,255,.4);font-family:var(--fm);font-size:10px;letter-spacing:3px;">RUN <span style="color:var(--a2);">python main.py</span> ON LAPTOP<br>THEN CLICK CONNECT BELOW</div>
+          </div>
+          <img id="ai-ct-img" style="display:none;" alt="AI-annotated feed">
+        </div>
+        <div class="ct-sidebar">
+          <div class="ct-sec-label">▎ SYSTEM</div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">AI MODEL</div><div class="ct-stat-val green">YOLOv8s</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">RUNTIME</div><div class="ct-stat-val green">ONNX</div></div>
+          </div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">THRESHOLD</div><div class="ct-stat-val green">70%</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">SMOOTHING</div><div class="ct-stat-val green">3/5</div></div>
+          </div>
+          <div class="ct-stat"><div class="ct-stat-lbl">SOURCE</div><div class="ct-stat-val cyan" id="ai-ct-source">—</div></div>
+
+          <div class="ct-sec-label">▎ LIVE TELEMETRY</div>
+          <div class="ct-stat-row">
+            <div class="ct-stat live-pulse" id="ai-ct-fps-tile"><div class="ct-stat-lbl">INFERENCE FPS</div><div class="ct-stat-val green" id="ai-ct-fps">—</div></div>
+            <div class="ct-stat live-pulse"><div class="ct-stat-lbl">UPTIME</div><div class="ct-stat-val cyan" id="ai-ct-uptime">—</div></div>
+          </div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">FRAMES</div><div class="ct-stat-val cyan" id="ai-ct-frames">—</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">DETECTIONS</div><div class="ct-stat-val amber" id="ai-ct-detections">—</div></div>
+          </div>
+
+          <div class="ct-sec-label">▎ THREAT ASSESSMENT</div>
+          <div class="ct-stat" id="ai-ct-threat-tile"><div class="ct-stat-lbl">THREAT LEVEL</div><div class="ct-stat-val green" id="ai-ct-threat">CLEAR</div></div>
+          <div class="ct-stat-row">
+            <div class="ct-stat"><div class="ct-stat-lbl">PERSONS</div><div class="ct-stat-val amber" id="ai-ct-persons">0</div></div>
+            <div class="ct-stat"><div class="ct-stat-lbl">CONFIDENCE</div><div class="ct-stat-val amber" id="ai-ct-conf">—</div></div>
+          </div>
+          <div class="ct-stat"><div class="ct-stat-lbl">LAST ALERT</div><div class="ct-stat-val red" id="ai-ct-lastalert">NONE</div></div>
+
+          <div class="ct-connect-bar">
+            <input type="text" id="ai-ct-url" value="http://localhost:5000/feed" placeholder="http://localhost:5000/feed">
+            <button onclick="connectAiTerminal()">CONNECT</button>
+            <button onclick="disconnectAiTerminal()" style="border-color:rgba(255,60,60,.3);color:var(--a3);">DISC.</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<script>
+/* ═══════════════════════════════════════
+   DATA MODEL
+═══════════════════════════════════════ */
+const UNITS = [
+  {
+    id:'ALPHA', label:'Unit Alpha — Primary Intelligence',
+    status:'online',
+    bots: [
+      {id:'BOT-01',unit:'ALPHA',type:'LIVE',status:'online',role:'Primary Intelligence',lat:12.9716,lng:77.5946,sats:7,radar:'CLEAR',ai:false,conf:0,uptime:'04:32:11',battery:'87%',signal:'STRONG'},
+      {id:'BOT-02',unit:'ALPHA',type:'DEMO',status:'online',role:'Area Surveillance',lat:12.9740,lng:77.5980,sats:6,radar:'CLEAR',ai:false,conf:0,uptime:'03:14:52',battery:'74%',signal:'STRONG'},
+      {id:'BOT-03',unit:'ALPHA',type:'DEMO',status:'alert',role:'Perimeter Guard',lat:12.9700,lng:77.5920,sats:5,radar:'MOTION',ai:true,conf:.89,uptime:'02:58:01',battery:'61%',signal:'MEDIUM'},
+      {id:'BOT-04',unit:'ALPHA',type:'DEMO',status:'online',role:'Corridor Monitor',lat:12.9760,lng:77.5910,sats:8,radar:'CLEAR',ai:false,conf:0,uptime:'05:01:22',battery:'92%',signal:'STRONG'},
+      {id:'BOT-05',unit:'ALPHA',type:'DEMO',status:'standby',role:'Entry Point',lat:12.9690,lng:77.5960,sats:4,radar:'IDLE',ai:false,conf:0,uptime:'01:20:00',battery:'100%',signal:'WEAK'},
+    ]
+  },
+  {
+    id:'BRAVO', label:'Unit Bravo — Support Network',
+    status:'partial',
+    bots: [
+      {id:'BOT-06',unit:'BRAVO',type:'DEMO',status:'online',role:'Mesh Node A',lat:12.9680,lng:77.5900,sats:7,radar:'CLEAR',ai:false,conf:0,uptime:'06:12:33',battery:'55%',signal:'STRONG'},
+      {id:'BOT-07',unit:'BRAVO',type:'DEMO',status:'alert',role:'Zone Delta Watch',lat:12.9720,lng:77.5870,sats:5,radar:'PRESENCE',ai:true,conf:.76,uptime:'02:44:10',battery:'48%',signal:'MEDIUM'},
+      {id:'BOT-08',unit:'BRAVO',type:'DEMO',status:'offline',role:'Backup Node',lat:12.9750,lng:77.5850,sats:0,radar:'OFFLINE',ai:false,conf:0,uptime:'00:00:00',battery:'12%',signal:'NONE'},
+      {id:'BOT-09',unit:'BRAVO',type:'DEMO',status:'online',role:'South Gate',lat:12.9660,lng:77.5940,sats:6,radar:'CLEAR',ai:false,conf:0,uptime:'03:55:04',battery:'79%',signal:'STRONG'},
+      {id:'BOT-10',unit:'BRAVO',type:'DEMO',status:'standby',role:'Reserve Unit',lat:12.9710,lng:77.5855,sats:3,radar:'IDLE',ai:false,conf:0,uptime:'00:45:00',battery:'100%',signal:'MEDIUM'},
+    ]
+  }
+];
+
+const allBots = UNITS.flatMap(u => u.bots);
+let currentFilter = 'all';
+let feedCount = 0;
+let netEventCount = 0;
+let leafletMap, markers = {};
+
+/* ═══════════════════════════════════════
+   AUTH
+═══════════════════════════════════════ */
+function doLogin(){
+  const u=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value.trim();
+  const err=document.getElementById('lerr');
+  if(!u||!p){err.textContent='⚠ ALL FIELDS REQUIRED';return;}
+  if(u!=='admin'||p!=='1234'){err.textContent='⚠ INVALID CREDENTIALS';document.getElementById('lp').value='';return;}
+  err.textContent='';
+  localStorage.setItem('s_user',u);
+  const l=document.getElementById('login');
+  l.style.cssText+='opacity:0;transition:opacity .5s;';
+  setTimeout(()=>{
+    l.style.display='none';
+    document.getElementById('app').classList.add('active');
+    document.getElementById('sess-user').textContent=u.toUpperCase();
+    initApp();
+  },500);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
+function doLogout(){localStorage.removeItem('s_user');location.reload();}
+if(localStorage.getItem('s_user')){
+  document.getElementById('lu').value='admin';
+  document.getElementById('lp').value='1234';
+  setTimeout(doLogin,120);
+}
+
+/* ═══════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════ */
+function tickClock(){document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8);}
+setInterval(tickClock,1000);tickClock();
+
+/* ═══════════════════════════════════════
+   INIT APP
+═══════════════════════════════════════ */
+function initApp(){
+  initMap();
+  renderDrawer();
+  startSimulation();
+  initFirebase();
+  document.getElementById('map-bots-count').textContent=allBots.length+' UNITS TRACKED';
+}
+
+/* ═══════════════════════════════════════
+   MAP
+═══════════════════════════════════════ */
+function initMap(){
+  leafletMap = L.map('leaflet-map',{zoomControl:false,attributionControl:false}).setView([12.972,77.592],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(leafletMap);
+
+  leafletMap.on('mousemove',e=>{
+    document.getElementById('map-cursor-coord').textContent=e.latlng.lat.toFixed(4)+'°N '+e.latlng.lng.toFixed(4)+'°E';
+  });
+  leafletMap.on('zoom',()=>{
+    document.getElementById('map-zoom').textContent=leafletMap.getZoom();
+  });
+  document.getElementById('map-zoom').textContent=leafletMap.getZoom();
+
+  // Add zoom control top-right
+  L.control.zoom({position:'topright'}).addTo(leafletMap);
+
+  allBots.forEach(bot=>addBotMarker(bot));
+}
+
+function makeDivIcon(bot){
+  const cls=`bmm-${bot.status}`;
+  return L.divIcon({
+    className:'',
+    html:`
+      <div class="bot-map-marker-wrap" style="display:flex; flex-direction:column; align-items:center; transform:translateY(-14px);">
+        <div class="bot-map-marker ${cls}" style="position:relative; transform:none;"><div class="bmm-core"></div><div class="bmm-ring"></div></div>
+        <div class="bot-map-label" style="margin-top:4px; font-family:var(--fd); font-size:10px; font-weight:700; color:var(--tbright); background:rgba(4,12,18,.8); padding:1px 4px; border:1px solid var(--border3); border-radius:2px; white-space:nowrap; pointer-events:none;">${bot.id}</div>
+      </div>
+    `,
+    iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-20]
+  });
+}
+
+function addBotMarker(bot){
+  const m=L.marker([bot.lat,bot.lng],{icon:makeDivIcon(bot)}).addTo(leafletMap);
+  m.bindPopup(makePopupHTML(bot),{className:'',minWidth:160});
+  m.on('click',()=>openBotModal(bot.id));
+  markers[bot.id]=m;
+}
+
+function makePopupHTML(bot){
+  const sc=bot.status==='alert'?'warn':bot.status==='online'?'ok':'';
+  return `<div class="popup-id">${bot.id}</div>
+  <div class="popup-row"><span>ROLE</span><span>${bot.role}</span></div>
+  <div class="popup-row"><span>STATUS</span><span class="${sc}">${bot.status.toUpperCase()}</span></div>
+  <div class="popup-row"><span>RADAR</span><span>${bot.radar}</span></div>
+  <div class="popup-row"><span>BATTERY</span><span>${bot.battery}</span></div>
+  <button class="popup-btn" onclick="openBotModal('${bot.id}')">▶ OPEN DETAIL</button>`;
+}
+
+function refreshMarker(bot){
+  if(!markers[bot.id])return;
+  markers[bot.id].setIcon(makeDivIcon(bot));
+  markers[bot.id].setPopupContent(makePopupHTML(bot));
+}
+
+/* ═══════════════════════════════════════
+   UNIT DRAWER
+═══════════════════════════════════════ */
+function toggleDrawer(){
+  const d=document.getElementById('unit-drawer');
+  const b=document.getElementById('units-btn');
+  d.classList.toggle('open');
+  b.classList.toggle('active-nav',d.classList.contains('open'));
+}
+
+function renderDrawer(){
+  const body=document.getElementById('ud-units-body');
+  const search=document.getElementById('bot-search').value.toLowerCase();
+  body.innerHTML='';
+  UNITS.forEach(unit=>{
+    const filteredBots=unit.bots.filter(b=>{
+      const matchSearch=!search||(b.id.toLowerCase().includes(search)||b.role.toLowerCase().includes(search)||b.status.toLowerCase().includes(search));
+      const matchFilter=currentFilter==='all'||b.status===currentFilter;
+      return matchSearch&&matchFilter;
+    });
+    if(filteredBots.length===0)return;
+    const sec=document.createElement('div');
+    sec.className='unit-section';
+    sec.innerHTML=`<div class="unit-section-header">
+      <div class="ush-left">
+        <div class="ush-label">UNIT ${unit.id}</div>
+        <div class="ush-count">${filteredBots.length} UNITS</div>
+      </div>
+      <div class="ush-status ${unit.status==='online'?'online':'partial'}">${unit.status.toUpperCase()}</div>
+    </div>
+    <div class="bot-grid" id="grid-${unit.id}"></div>`;
+    body.appendChild(sec);
+    const grid=sec.querySelector('.bot-grid');
+    filteredBots.forEach(bot=>{
+      const card=makeBotCard(bot);
+      grid.appendChild(card);
+    });
+  });
+}
+
+function makeBotCard(bot){
+  const card=document.createElement('div');
+  let extra='';
+  if(bot.type==='LIVE')extra='live';
+  if(bot.status==='alert')extra+=' alert-card';
+  if(bot.status==='offline')extra+=' offline-card';
+  card.className='bot-card '+extra;
+  card.onclick=()=>openBotModal(bot.id);
+
+  const badgeCls=bot.status==='online'?'online':bot.status==='alert'?'alert':bot.status==='offline'?'offline':'standby';
+  const radarCls=bot.status==='alert'?'warn':'ok';
+
+  card.innerHTML=`
+    ${bot.type==='LIVE'?'<div class="bc-live-badge">LIVE</div>':''}
+    <div class="bc-top">
+      <div class="bc-id">${bot.id}</div>
+      <div class="bc-badge ${badgeCls}">${bot.status.toUpperCase()}</div>
+    </div>
+    <div class="bc-rows">
+      <div class="bc-row"><span class="bc-row-l">ROLE</span><span class="bc-row-v" style="font-size:8px;">${bot.role}</span></div>
+      <div class="bc-row"><span class="bc-row-l">RADAR</span><span class="bc-row-v ${radarCls}">${bot.radar}</span></div>
+      <div class="bc-row"><span class="bc-row-l">BATT</span><span class="bc-row-v hi">${bot.battery}</span></div>
+      <div class="bc-row"><span class="bc-row-l">SIG</span><span class="bc-row-v">${bot.signal}</span></div>
+    </div>`;
+  return card;
+}
+
+function filterBots(){renderDrawer();}
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDrawer();
+}
+
+/* ═══════════════════════════════════════
+   OPERATOR CONSOLE (FOCUS MODE)
+═══════════════════════════════════════ */
+function openBotModal(botId){
+  const bot=allBots.find(b=>b.id===botId);
+  if(!bot)return;
+  const consoleDiv=document.getElementById('operator-console');
+  consoleDiv.innerHTML='';
+  document.querySelector('.main').classList.add('focus-mode');
+  
+  if(bot.type==='LIVE'){
+    consoleDiv.innerHTML=buildLiveConsole(bot);
+    startLiveModalSim(bot);
+  } else {
+    consoleDiv.innerHTML=buildDemoConsole(bot);
+    startDemoModalSim(bot);
+  }
+}
+function closeBotModal(){
+  document.querySelector('.main').classList.remove('focus-mode');
+  setTimeout(()=>{
+    document.getElementById('operator-console').innerHTML='';
+  },500); // clear after animation finishes
+}
+
+/* ── LIVE CONSOLE (BOT-01) ── */
+function buildLiveConsole(bot){
+  const badgeCls=bot.status==='online'?'online':bot.status==='alert'?'alert':'offline';
+  return `
+  <div class="op-header">
+    <div class="op-id">${bot.id}</div>
+    <div class="op-name">${bot.role}</div>
+    <div class="bm-badge bc-badge ${badgeCls}">${bot.status.toUpperCase()}</div>
+    <div class="bm-badge bc-badge online" style="margin-left:4px;">UNIT ${bot.unit}</div>
+    <div class="bm-badge bc-badge online" style="margin-left:4px;color:var(--accent);border-color:rgba(0,207,255,.3);">● LIVE HARDWARE FEED</div>
+    <div class="bm-badge bc-badge" style="margin-left:auto;color:var(--tdim);border:none;">LAT: <span class="hi">${bot.lat.toFixed(4)}°N</span> | LNG: <span class="hi">${bot.lng.toFixed(4)}°E</span></div>
+    <button class="op-close" onclick="closeBotModal()">CLOSE HUD ✕</button>
+  </div>
+  <div class="op-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="op-col-left">
+      <!-- CAMERA HERO — click to open mode selector -->
+      <div class="op-panel hero" style="flex:1;cursor:pointer;" onclick="openCamSelector()" title="CLICK TO SELECT CAMERA MODE">
+        <div class="mp-header">
+          <div class="mp-title">OPTICAL SENSOR FEED</div>
+          <div class="mp-badge live" id="modal-cam-badge">⤢ SELECT MODE</div>
+        </div>
+        <div class="cam-area" id="modal-cam-area">
+          <div class="cam-corners">
+            <div class="c tl"></div><div class="c tr"></div>
+            <div class="c bl"></div><div class="c br"></div>
+          </div>
+          <div class="rec-chip" id="modal-rec" style="display:none"><div class="rd"></div>LIVE</div>
+          <div class="cam-placeholder" id="modal-cam-ph">
+            <div class="cam-icon">⬡</div>
+            <div class="cam-txt">AWAITING STREAM URL<br>ENTER ESP32-CAM ADDRESS BELOW</div>
+          </div>
+          <img id="modal-cam-img" style="display:none;width:100%;height:100%;object-fit:cover;" alt="stream">
+        </div>
+        <div class="cam-controls">
+          <input type="text" id="modal-stream-url" placeholder="http://192.168.x.x:81/stream">
+          <button class="cbtn" onclick="connectModalStream()">CONNECT</button>
+          <button class="cbtn disc" onclick="disconnectModalStream()">DISC.</button>
+        </div>
+      </div>
+    </div> <!-- END LEFT COL -->
+
+    <!-- RIGHT COLUMN -->
+    <div class="op-col-right">
+      <!-- AI ENGINE -->
+      <div class="op-panel">
+        <div class="mp-header">
+          <div class="mp-title">AI ENGINE (YOLOv8s)</div>
+          <div class="mp-badge" id="modal-ai-badge">8 FPS · LOOP B</div>
+        </div>
+        <div class="ai-mini">
+          <div class="aim-status clear" id="modal-aim-box">
+            <div class="aim-icon" id="modal-aim-icon">🟢</div>
+            <div class="aim-val-wrapper">
+              <div class="aim-label">PERSON DETECTED</div>
+              <div class="aim-val no" id="modal-aim-val">NO THREAT</div>
+            </div>
+          </div>
+          <div class="aim-conf-row">
+            <div class="aim-conf-lbl">CONFIDENCE</div>
+            <div class="aim-conf-wrap"><div class="aim-conf-bar" id="modal-conf-bar" style="width:0%"></div></div>
+            <div class="aim-conf-val" id="modal-conf-val">0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADVANCED RADAR — click to open Deep-Dive terminal -->
+      <div class="op-panel adv-radar-panel-clickable" style="flex:1.5;cursor:pointer;" onclick="openRadarDeepDive()" title="CLICK TO OPEN RADAR TERMINAL">
+        <div class="mp-header"><div class="mp-title">ADVANCED RADAR: HLK-LD2410C</div><div class="mp-badge live">⤢ CLICK TO EXPAND · 24GHz MMW</div></div>
+        <div class="adv-radar-panel">
+          
+          <div class="rad-viz-box">
+            <!-- Sweep & Grid -->
+            <svg class="rad-grid" viewBox="0 0 100 100">
+              <defs>
+                <radialGradient id="sweepGrad-live" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,207,255,0.2)"/>
+                  <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
+                </radialGradient>
+              </defs>
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(0,207,255,0.3)" stroke-width="0.5"/>
+              <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(0,207,255,0.2)" stroke-width="0.5" stroke-dasharray="2,2"/>
+              <circle cx="50" cy="50" r="15" fill="none" stroke="rgba(0,207,255,0.1)" stroke-width="0.5"/>
+              <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(0,207,255,0.1)" stroke-width="0.5" stroke-dasharray="1,1"/>
+              <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(0,207,255,0.1)" stroke-width="0.5" stroke-dasharray="1,1"/>
+              <g class="rad-sweep">
+                <path d="M50,50 L50,5 A45,45 0 0,1 82,18 Z" fill="url(#sweepGrad-live)"/>
+                <line x1="50" y1="50" x2="50" y2="5" stroke="var(--accent)" stroke-width="1.5" filter="drop-shadow(0 0 4px var(--accent))"/>
+              </g>
+              <circle cx="50" cy="50" r="3.5" fill="var(--accent)" class="rad-blip" id="modal-radar-blip"/>
+            </svg>
+          </div>
+
+          <div class="rad-stats-box">
+             <div class="rs-group">
+                <div class="rs-lbl">PRESENCE STATE</div>
+                <div class="rs-val ok" id="modal-radar-pres">CLEAR</div>
+             </div>
+             <div class="rs-group">
+                <div class="rs-lbl">MACRO-MOTION ENERGY</div>
+                <div class="rs-val hi" id="modal-radar-macro">0%</div>
+                <div class="rs-bar-wrap"><div class="rs-bar" id="modal-radar-mac-bar" style="width:0%;background:var(--accent);"></div></div>
+             </div>
+             <div class="rs-group">
+                <div class="rs-lbl">MICRO-MOTION ENERGY</div>
+                <div class="rs-val hi" id="modal-radar-micro">0%</div>
+                <div class="rs-bar-wrap"><div class="rs-bar" id="modal-radar-mic-bar" style="width:0%;background:var(--a4);"></div></div>
+             </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- EVENT LOG -->
+      <div class="op-panel" style="flex:1;">
+        <div class="mp-header">
+          <div class="mp-title">SYSTEM EVENT LOG</div>
+          <div class="mp-badge live">● LIVE FEED</div>
+        </div>
+        <div class="elog">
+          <div class="elog-body" id="modal-elog" style="max-height:none;"></div>
+        </div>
+      </div>
+    </div> <!-- END RIGHT COL -->
+
+  </div>`;
+}
+
+/* ── DEMO CONSOLE ── */
+function buildDemoConsole(bot){
+  const badgeCls=bot.status==='online'?'online':bot.status==='alert'?'alert':bot.status==='offline'?'offline':'standby';
+  const aiIcon=bot.ai?'🔴':'🟢';
+  const aiVal=bot.ai?'THREAT DETECTED':'NO THREAT';
+  const aiCls=bot.ai?'yes':'no';
+  const aiBoxCls=bot.ai?'detected':'clear';
+
+  // Generate dummy log
+  const dummyLogs=[
+    {msg:'System boot complete. All sensors initialized.',t:'ok'},
+    {msg:`GPS lock acquired. ${bot.sats} satellites.`,t:'ok'},
+    {msg:'Radar HLK-LD2410C online. Frequency 24.1GHz',t:'ok'},
+    {msg:'Firebase sync established.',t:'ok'},
+    bot.ai?{msg:'⚠ PERSON DETECTED — confidence '+bot.conf.toFixed(2),t:'err'}:null,
+    {msg:'Telemetry uplink active.',t:'ok'},
+  ].filter(Boolean);
+
+  return `
+  <div class="op-header">
+    <div class="op-id">${bot.id}</div>
+    <div class="op-name">${bot.role}</div>
+    <div class="bm-badge bc-badge ${badgeCls}">${bot.status.toUpperCase()}</div>
+    <div class="bm-badge bc-badge online" style="margin-left:4px;">UNIT ${bot.unit}</div>
+    <div class="bm-badge bc-badge" style="margin-left:auto;color:var(--tdim);border:none;">LAT: <span class="hi">${bot.lat.toFixed(4)}°N</span> | LNG: <span class="hi">${bot.lng.toFixed(4)}°E</span></div>
+    <button class="op-close" onclick="closeBotModal()">CLOSE HUD ✕</button>
+  </div>
+  <div class="op-demo-banner">⬡ DEMO MODE — Simulated sensor data for demonstration purposes</div>
+  <div class="op-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="op-col-left">
+      <!-- SYSTEM CAMERA HERO -->
+      <div class="op-panel hero" style="flex:1;">
+        <div class="mp-header"><div class="mp-title">OPTICAL SENSOR FEED — SIMULATED</div><div class="mp-badge ${bot.status==='online'?'live':''}">● ${bot.status.toUpperCase()}</div></div>
+        <div class="cam-area" style="background:#020609;">
+          <div class="cam-corners">
+            <div class="c tl"></div><div class="c tr"></div>
+            <div class="c bl"></div><div class="c br"></div>
+          </div>
+          <div class="cam-placeholder">
+             <div class="cam-icon" style="animation:none;border-color:var(--border2);color:var(--border2)">⬡</div>
+             <div class="cam-txt" style="color:var(--border2)">NO LIVE FEED AVAILABLE<br>DEMONSTRATION UNIT ONLY</div>
+          </div>
+        </div>
+      </div>
+    </div> <!-- END LEFT COL -->
+
+    <!-- RIGHT COLUMN -->
+    <div class="op-col-right">
+      <!-- AI -->
+      <div class="op-panel">
+        <div class="mp-header"><div class="mp-title">AI ENGINE (YOLOv8s)</div><div class="mp-badge">8 FPS · LOOP B</div></div>
+        <div class="ai-mini">
+          <div class="aim-status ${aiBoxCls}">
+            <div class="aim-icon">${aiIcon}</div>
+            <div class="aim-val-wrapper">
+              <div class="aim-label">PERSON DETECTED</div>
+              <div class="aim-val ${aiCls}">${aiVal}</div>
+            </div>
+          </div>
+          <div class="aim-conf-row">
+            <div class="aim-conf-lbl">CONFIDENCE</div>
+            <div class="aim-conf-wrap"><div class="aim-conf-bar" style="width:${bot.conf*100}%;${bot.ai?'background:linear-gradient(90deg,var(--a4),var(--a3));':''}"></div></div>
+            <div class="aim-conf-val" style="${bot.ai?'color:var(--a3);':''}">${bot.conf.toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADVANCED RADAR -->
+      <div class="op-panel" style="flex:1.5;">
+        <div class="mp-header"><div class="mp-title">ADVANCED RADAR: HLK-LD2410C</div><div class="mp-badge live">● 24GHz MMW</div></div>
+        <div class="adv-radar-panel">
+          
+          <div class="rad-viz-box">
+            <!-- Sweep & Grid -->
+            <svg class="rad-grid" viewBox="0 0 100 100">
+              <defs>
+                <radialGradient id="sweepGrad-${bot.id}" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,207,255,0.2)"/>
+                  <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
+                </radialGradient>
+              </defs>
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(0,207,255,0.3)" stroke-width="0.5"/>
+              <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(0,207,255,0.2)" stroke-width="0.5" stroke-dasharray="2,2"/>
+              <circle cx="50" cy="50" r="15" fill="none" stroke="rgba(0,207,255,0.1)" stroke-width="0.5"/>
+              <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(0,207,255,0.1)" stroke-width="0.5" stroke-dasharray="1,1"/>
+              <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(0,207,255,0.1)" stroke-width="0.5" stroke-dasharray="1,1"/>
+              <g class="rad-sweep">
+                <path d="M50,50 L50,5 A45,45 0 0,1 82,18 Z" fill="url(#sweepGrad-${bot.id})"/>
+                <line x1="50" y1="50" x2="50" y2="5" stroke="var(--accent)" stroke-width="1.5" filter="drop-shadow(0 0 4px var(--accent))"/>
+              </g>
+              <circle cx="50" cy="50" r="3.5" fill="${bot.ai?'var(--a3)':'var(--a2)'}" class="rad-blip" id="demo-radar-blip-${bot.id}" ${bot.ai?'':'style="opacity:0;"'}/>
+            </svg>
+          </div>
+
+          <div class="rad-stats-box">
+             <div class="rs-group">
+                <div class="rs-lbl">PRESENCE STATE</div>
+                <div class="rs-val ${bot.radar==='CLEAR'||bot.radar==='IDLE'?'ok':'warn'}">${bot.radar}</div>
+             </div>
+             <div class="rs-group">
+                <div class="rs-lbl">MACRO-MOTION ENERGY</div>
+                <div class="rs-val hi">${bot.ai?'84%':'12%'}</div>
+                <div class="rs-bar-wrap"><div class="rs-bar" style="width:${bot.ai?'84%':'12%'};background:var(--accent);"></div></div>
+             </div>
+             <div class="rs-group">
+                <div class="rs-lbl">MICRO-MOTION ENERGY</div>
+                <div class="rs-val hi">${bot.ai?'92%':'40%'}</div>
+                <div class="rs-bar-wrap"><div class="rs-bar" style="width:${bot.ai?'92%':'40%'};background:var(--a4);"></div></div>
+             </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Event log -->
+      <div class="op-panel" style="flex:1;">
+        <div class="mp-header"><div class="mp-title">EVENT LOG</div><div class="mp-badge live">● FEED</div></div>
+        <div class="dummy-elog elog-body" id="demo-elog-${bot.id}">
+          ${dummyLogs.map(l=>`<div class="elog-entry"><span class="elog-time">[${randomTime()}]</span><span class="elog-msg ${l.t}">${l.msg}</span></div>`).join('')}
+        </div>
+      </div>
+    </div> <!-- END RIGHT COL -->
+
+  </div>`;
+}
+
+/* ── LIVE MODAL INTERACTIVITY ── */
+let liveDetCount=0;
+let liveModalIntervals=[];
+
+function startLiveModalSim(bot){
+  // Radar blip & advanced stats
+  const radarI=setInterval(()=>{
+    if(!document.querySelector('.main').classList.contains('focus-mode'))return;
+    const blip=document.getElementById('modal-radar-blip');
+    if(!blip)return;
+    const a=Math.random()*Math.PI*2, r=Math.random()*35+5;
+    blip.setAttribute('cx',50+r*Math.cos(a));
+    blip.setAttribute('cy',50+r*Math.sin(a));
+    blip.style.opacity='1';
+    
+    // Animate macro and micro for realism
+    const isDet = document.getElementById('modal-radar-pres').textContent === 'DETECTED';
+    let mac = isDet ? 70+Math.random()*25 : 5+Math.random()*15;
+    let mic = isDet ? 85+Math.random()*15 : 20+Math.random()*30;
+    
+    if(document.getElementById('modal-radar-macro')){
+       document.getElementById('modal-radar-macro').textContent=Math.floor(mac)+'%';
+       document.getElementById('modal-radar-mac-bar').style.width=mac+'%';
+       document.getElementById('modal-radar-micro').textContent=Math.floor(mic)+'%';
+       document.getElementById('modal-radar-mic-bar').style.width=mic+'%';
+    }
+
+    setTimeout(()=>{if(blip && !isDet)blip.style.opacity='0';},400);
+  },2200);
+
+  liveModalIntervals=[radarI];
+
+  // Initial log
+  setTimeout(()=>{
+    modalLog('System online. All sensors active.','ok');
+    modalLog('GPS 3D lock — '+bot.sats+' satellites.','ok');
+    modalLog('Radar HLK-LD2410C sweeping mode ready.','ok');
+    modalLog('Firebase Realtime Database connected.','ok');
+  },200);
+}
+
+function liveDetect(detected){
+  const now=new Date().toTimeString().slice(0,8);
+  if(detected){
+    liveDetCount++;
+    const c=(0.70+Math.random()*.28);
+    document.getElementById('modal-aim-box').className='aim-status detected';
+    document.getElementById('modal-aim-icon').textContent='🔴';
+    document.getElementById('modal-aim-val').textContent='THREAT DETECTED';
+    document.getElementById('modal-aim-val').className='aim-val yes';
+    document.getElementById('modal-conf-bar').style.cssText=`width:${c*100}%;background:linear-gradient(90deg,var(--a4),var(--a3));`;
+    document.getElementById('modal-conf-val').textContent=c.toFixed(2);
+    document.getElementById('modal-conf-val').style.color='var(--a3)';
+    document.getElementById('modal-ai-badge').textContent='⚠ PERSON IN FRAME';
+    document.getElementById('modal-radar-pres').textContent='DETECTED';
+    document.getElementById('modal-radar-pres').className='rs-val warn';
+    modalLog(`⚠ ALERT: Person detected at ${now} (conf:${c.toFixed(2)})`,'err');
+    // also push to network feed
+    addFeedItem({bot:'BOT-01',level:'threat',msg:`Person detected (conf:${c.toFixed(2)})`,time:now});
+    netThreat('threat');
+  } else {
+    document.getElementById('modal-aim-box').className='aim-status clear';
+    document.getElementById('modal-aim-icon').textContent='🟢';
+    document.getElementById('modal-aim-val').textContent='NO THREAT';
+    document.getElementById('modal-aim-val').className='aim-val no';
+    document.getElementById('modal-conf-bar').style.cssText='width:0%;';
+    document.getElementById('modal-conf-val').textContent='0.00';
+    document.getElementById('modal-conf-val').style.color='var(--accent)';
+    document.getElementById('modal-ai-badge').textContent='8 FPS · LOOP B';
+    document.getElementById('modal-radar-pres').textContent='CLEAR';
+    document.getElementById('modal-radar-pres').className='rs-val ok';
+    modalLog('Area cleared. Threat neutralized.','ok');
+  }
+}
+
+function modalLog(msg,t=''){
+  const el=document.getElementById('modal-elog');
+  if(!el)return;
+  const e=document.createElement('div');
+  e.className='elog-entry';
+  e.innerHTML=`<span class="elog-time">[${new Date().toTimeString().slice(0,8)}]</span><span class="elog-msg ${t}">${msg}</span>`;
+  el.insertBefore(e,el.firstChild);
+  while(el.children.length>50)el.removeChild(el.lastChild);
+}
+
+function connectModalStream(){
+  const url=document.getElementById('modal-stream-url').value.trim();
+  if(!url){modalLog('No stream URL entered.','warn');return;}
+  const img=document.getElementById('modal-cam-img');
+  img.src=url; img.style.display='block';
+  document.getElementById('modal-cam-ph').style.display='none';
+  document.getElementById('modal-rec').style.display='flex';
+  document.getElementById('modal-cam-badge').textContent='● STREAMING';
+  modalLog('Camera stream connected.','ok');
+  img.onerror=()=>{modalLog('Stream failed. Check URL.','err');disconnectModalStream();};
+}
+function disconnectModalStream(){
+  const img=document.getElementById('modal-cam-img');
+  img.src=''; img.style.display='none';
+  document.getElementById('modal-cam-ph').style.display='flex';
+  document.getElementById('modal-rec').style.display='none';
+  document.getElementById('modal-cam-badge').textContent='● STREAM READY';
+  modalLog('Camera disconnected.','warn');
+}
+
+/* ── DEMO MODAL SIM ── */
+function startDemoModalSim(bot){
+  const elogId='demo-elog-'+bot.id;
+  const blipId='demo-radar-blip-'+bot.id;
+  const addLog=(msg,t)=>{
+    const el=document.getElementById(elogId);
+    if(!el)return;
+    const e=document.createElement('div');
+    e.className='elog-entry';
+    e.innerHTML=`<span class="elog-time">[${new Date().toTimeString().slice(0,8)}]</span><span class="elog-msg ${t}">${msg}</span>`;
+    el.insertBefore(e,el.firstChild);
+    while(el.children.length>30)el.removeChild(el.lastChild);
+  };
+  const i=setInterval(()=>{
+    if(!document.querySelector('.main').classList.contains('focus-mode')){clearInterval(i);return;}
+    const msgs=[
+      ['Telemetry packet sent to Firebase.','ok'],
+      ['GPS coordinates updated.','ok'],
+      ['Radar sweep complete — no anomaly.','ok'],
+      ['System heartbeat OK.','ok'],
+      ['WiFi RSSI: -'+(45+Math.floor(Math.random()*30))+'dBm.',''],
+    ];
+    const pick=msgs[Math.floor(Math.random()*msgs.length)];
+    addLog(pick[0],pick[1]);
+
+    const blip=document.getElementById(blipId);
+    if(blip){
+      const a=Math.random()*Math.PI*2,r=Math.random()*35+5;
+      blip.setAttribute('cx',55+r*Math.cos(a));
+      blip.setAttribute('cy',55+r*Math.sin(a));
+      blip.style.opacity='1';
+      setTimeout(()=>{if(blip)blip.style.opacity='0';},400);
+    }
+  },3000);
+}
+
+/* ═══════════════════════════════════════
+   NETWORK THREAT
+═══════════════════════════════════════ */
+let netEventTotal=0;
+
+function netThreat(level){
+  const tsc=document.getElementById('tsc');
+  const tsl=document.getElementById('ts-level');
+  const confBar=document.getElementById('net-conf-bar');
+  const confVal=document.getElementById('net-conf-val');
+  const dot=document.getElementById('net-alert-dot');
+  const lbl=document.getElementById('net-alert-lbl');
+  const src=document.getElementById('ts-src');
+  const tsTime=document.getElementById('ts-time');
+
+  const now=new Date().toTimeString().slice(0,8);
+  tsTime.textContent=now;
+
+  if(level==='threat'){
+    netEventTotal++;
+    const c=.70+Math.random()*.28;
+    tsc.className='threat-status-card threat';
+    tsl.textContent='THREAT'; tsl.className='ts-level threat';
+    confBar.style.cssText=`width:${c*100}%;background:linear-gradient(90deg,var(--a4),var(--a3));`;
+    confVal.textContent=c.toFixed(2); confVal.style.color='var(--a3)';
+    dot.className='dot warn'; lbl.textContent='THREAT DETECTED';
+    src.textContent='BOT-'+(Math.floor(Math.random()*10)+1).toString().padStart(2,'0');
+    addFeedItem({bot:src.textContent,level:'threat',msg:'Person detected (conf:'+c.toFixed(2)+')',time:now});
+  } else if(level==='caution'){
+    netEventTotal++;
+    const c=.45+Math.random()*.25;
+    tsc.className='threat-status-card caution';
+    tsl.textContent='CAUTION'; tsl.className='ts-level caution';
+    confBar.style.cssText=`width:${c*100}%;background:linear-gradient(90deg,var(--a4),var(--a4));`;
+    confVal.textContent=c.toFixed(2); confVal.style.color='var(--a4)';
+    dot.className='dot warn'; lbl.textContent='CAUTION ACTIVE';
+    src.textContent='BOT-'+(Math.floor(Math.random()*10)+1).toString().padStart(2,'0');
+    addFeedItem({bot:src.textContent,level:'caution',msg:'Motion detected (conf:'+c.toFixed(2)+')',time:now});
+  } else {
+    tsc.className='threat-status-card clear';
+    tsl.textContent='CLEAR'; tsl.className='ts-level clear';
+    confBar.style.cssText='width:0%;background:linear-gradient(90deg,var(--a2),var(--accent));';
+    confVal.textContent='0.00'; confVal.style.color='var(--accent)';
+    dot.className='dot'; lbl.textContent='NETWORK CLEAR';
+    src.textContent='—';
+    addFeedItem({bot:'SYSTEM',level:'clear',msg:'Network threat cleared.',time:now});
+  }
+  document.getElementById('ts-events').textContent=netEventTotal;
+}
+
+function addFeedItem(item){
+  feedCount++;
+  document.getElementById('feed-count').textContent=feedCount+' EVENTS';
+  const list=document.getElementById('feed-list');
+  const el=document.createElement('div');
+  el.className='feed-item';
+  el.innerHTML=`
+    <div class="fi-top">
+      <div class="fi-bot ${item.level}">${item.bot}</div>
+      <div class="fi-time">${item.time}</div>
+    </div>
+    <div class="fi-msg">${item.msg}</div>`;
+  list.insertBefore(el,list.firstChild);
+  while(list.children.length>20)list.removeChild(list.lastChild);
+}
+
+/* ═══════════════════════════════════════
+   SIMULATION
+═══════════════════════════════════════ */
+function randomTime(){
+  const d=new Date();
+  d.setSeconds(d.getSeconds()-Math.floor(Math.random()*300));
+  return d.toTimeString().slice(0,8);
+}
+
+function startSimulation(){
+  // Periodic auto-events from demo bots
+  setInterval(()=>{
+    // randomly pick an alert bot and trigger a network event
+    const alertBots=allBots.filter(b=>b.status==='alert');
+    if(Math.random()<0.3&&alertBots.length>0){
+      const bot=alertBots[Math.floor(Math.random()*alertBots.length)];
+      const c=(bot.conf||.75)+(Math.random()-.5)*.05;
+      addFeedItem({bot:bot.id,level:'threat',msg:'Motion persists (conf:'+Math.max(0,Math.min(1,c)).toFixed(2)+')',time:new Date().toTimeString().slice(0,8)});
+    }
+  },8000);
+
+  // GPS drift for BOT-01 on map
+  setInterval(()=>{
+    const bot=allBots[0];
+    bot.lat+=(Math.random()-.5)*.0002;
+    bot.lng+=(Math.random()-.5)*.0002;
+    if(markers[bot.id])markers[bot.id].setLatLng([bot.lat,bot.lng]);
+  },2000);
+}
+
+/* ═══════════════════════════════════════
+   FIREBASE REAL-TIME INTEGRATION
+   BOT-01 is the LIVE hardware unit.
+   All other bots remain as fleet simulation.
+═══════════════════════════════════════ */
+let fbDb = null;
+let fbListeners = [];
+
+function initFirebase() {
+  try {
+    const firebaseConfig = {
+      apiKey: "REPLACE_WITH_YOUR_FIREBASE_API_KEY",
+      authDomain: "REPLACE_WITH_YOUR_FIREBASE_AUTH_DOMAIN",
+      databaseURL: "REPLACE_WITH_YOUR_FIREBASE_DATABASE_URL",
+      projectId: "REPLACE_WITH_YOUR_FIREBASE_PROJECT_ID",
+      storageBucket: "REPLACE_WITH_YOUR_FIREBASE_STORAGE_BUCKET",
+      messagingSenderId: "REPLACE_WITH_YOUR_FIREBASE_MESSAGING_SENDER_ID",
+      appId: "REPLACE_WITH_YOUR_FIREBASE_APP_ID",
+      measurementId: "REPLACE_WITH_YOUR_FIREBASE_MEASUREMENT_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    fbDb = firebase.database();
+
+    // Update topbar Firebase pill to show connected
+    const fbPill = document.querySelector('.tb-pill:first-child .dot');
+    if (fbPill) fbPill.style.background = 'var(--a2)';
+
+    console.log('[FIREBASE] Connected to rob-track RTDB');
+    addFeedItem({bot:'SYSTEM', level:'clear', msg:'Firebase Realtime Database connected.', time: new Date().toTimeString().slice(0,8)});
+
+    // Bind all real-time listeners for BOT-01
+    bindGPSListener();
+    bindAIListener();
+    bindRadarListener();
+    bindCameraListener();
+
+  } catch (err) {
+    console.error('[FIREBASE] Init failed:', err);
+    const fbPill = document.querySelector('.tb-pill:first-child .dot');
+    if (fbPill) { fbPill.style.background = 'var(--a3)'; fbPill.classList.add('warn'); }
+  }
+}
+
+/* ── GPS LISTENER ── */
+function bindGPSListener() {
+  const gpsRef = fbDb.ref('bot1/gps');
+  let firstGPSFix = true;
+
+  gpsRef.on('value', (snap) => {
+    const data = snap.val();
+    if (!data) return;
+
+    const bot = allBots[0]; // BOT-01
+    const lat = parseFloat(data.latitude);
+    const lng = parseFloat(data.longitude);
+    const sats = parseInt(data.satellites) || 0;
+
+    if (!isNaN(lat) && !isNaN(lng)) {
+      bot.lat = lat;
+      bot.lng = lng;
+      bot.sats = sats;
+
+      // Update BOT-01 map marker
+      if (markers[bot.id]) {
+        markers[bot.id].setLatLng([lat, lng]);
+        markers[bot.id].setPopupContent(makePopupHTML(bot));
+      }
+
+      // ── FLEET REPOSITIONING ──
+      // On first GPS fix, scatter all simulated bots around BOT-01's real location
+      // so the entire fleet appears clustered near the actual hardware bot
+      if (firstGPSFix) {
+        firstGPSFix = false;
+        const offsets = [
+          {dlat: 0.0024, dlng: 0.0034},   // BOT-02
+          {dlat:-0.0016, dlng:-0.0026},    // BOT-03
+          {dlat: 0.0044, dlng:-0.0036},    // BOT-04
+          {dlat:-0.0026, dlng: 0.0014},    // BOT-05
+          {dlat:-0.0036, dlng:-0.0046},    // BOT-06
+          {dlat: 0.0004, dlng:-0.0076},    // BOT-07
+          {dlat: 0.0034, dlng:-0.0096},    // BOT-08
+          {dlat:-0.0056, dlng:-0.0006},    // BOT-09
+          {dlat:-0.0006, dlng:-0.0091},    // BOT-10
+        ];
+        for (let i = 1; i < allBots.length; i++) {
+          const demoBot = allBots[i];
+          const o = offsets[i - 1] || {dlat: (Math.random()-.5)*.006, dlng: (Math.random()-.5)*.006};
+          demoBot.lat = lat + o.dlat;
+          demoBot.lng = lng + o.dlng;
+          if (markers[demoBot.id]) {
+            markers[demoBot.id].setLatLng([demoBot.lat, demoBot.lng]);
+            markers[demoBot.id].setPopupContent(makePopupHTML(demoBot));
+          }
+        }
+        // Pan map to show the full fleet
+        leafletMap.setView([lat, lng], 14);
+        addFeedItem({bot:'SYSTEM', level:'clear', msg:'Fleet repositioned around BOT-01 GPS fix.', time: new Date().toTimeString().slice(0,8)});
+      }
+
+      // Update modal GPS (if BOT-01 modal is open)
+      const modalLat = document.getElementById('modal-lat');
+      const modalLng = document.getElementById('modal-lng');
+      const modalSats = document.getElementById('modal-sats');
+      if (modalLat) modalLat.textContent = lat.toFixed(4) + '°N';
+      if (modalLng) modalLng.textContent = lng.toFixed(4) + '°E';
+      if (modalSats) modalSats.textContent = sats + ' / 12';
+
+      // Refresh drawer card
+      renderDrawer();
+
+      console.log(`[GPS] ${lat.toFixed(5)}, ${lng.toFixed(5)} | Sats: ${sats}`);
+    }
+  });
+}
+
+/* ── AI DETECTION LISTENER ── */
+function bindAIListener() {
+  const aiRef = fbDb.ref('bot1/ai');
+  aiRef.on('value', (snap) => {
+    const data = snap.val();
+    if (!data) return;
+
+    const bot = allBots[0]; // BOT-01
+    const detected = (data.personDetected === true || data.personDetected === 'YES' || data.personDetected === 'yes');
+    const confidence = parseFloat(data.confidence) || 0;
+    const confNorm = confidence > 1 ? confidence / 100 : confidence; // Handle both 0.85 and 85 formats
+    const timestamp = data.timestamp || new Date().toTimeString().slice(0,8);
+
+    bot.ai = detected;
+    bot.conf = confNorm;
+
+    // Update network threat panel (right side bar)
+    if (detected && confNorm >= 0.70) {
+      netThreat('threat');
+      bot.status = 'alert';
+      addFeedItem({bot:'BOT-01', level:'threat', msg:'LIVE: Person detected (conf:' + confNorm.toFixed(2) + ')', time: timestamp});
+    } else if (detected && confNorm >= 0.40) {
+      netThreat('caution');
+      bot.status = 'online';
+      addFeedItem({bot:'BOT-01', level:'caution', msg:'LIVE: Low-confidence motion (conf:' + confNorm.toFixed(2) + ')', time: timestamp});
+    } else {
+      // Only clear if previously was threat
+      if (bot.status === 'alert') {
+        netThreat('clear');
+        addFeedItem({bot:'BOT-01', level:'clear', msg:'LIVE: Area cleared.', time: timestamp});
+      }
+      bot.status = 'online';
+    }
+
+    // Update modal AI panel (if BOT-01 modal is open)
+    const modalAimBox = document.getElementById('modal-aim-box');
+    if (modalAimBox) {
+      if (detected) {
+        modalAimBox.className = 'aim-status detected';
+        const icon = document.getElementById('modal-aim-icon');
+        const val = document.getElementById('modal-aim-val');
+        const confBar = document.getElementById('modal-conf-bar');
+        const confVal = document.getElementById('modal-conf-val');
+        if (icon) icon.textContent = '🔴';
+        if (val) { val.textContent = 'THREAT DETECTED'; val.className = 'aim-val yes'; }
+        if (confBar) confBar.style.cssText = `width:${confNorm*100}%;background:linear-gradient(90deg,var(--a4),var(--a3));`;
+        if (confVal) { confVal.textContent = confNorm.toFixed(2); confVal.style.color = 'var(--a3)'; }
+      } else {
+        modalAimBox.className = 'aim-status clear';
+        const icon = document.getElementById('modal-aim-icon');
+        const val = document.getElementById('modal-aim-val');
+        const confBar = document.getElementById('modal-conf-bar');
+        const confVal = document.getElementById('modal-conf-val');
+        if (icon) icon.textContent = '🟢';
+        if (val) { val.textContent = 'NO THREAT'; val.className = 'aim-val no'; }
+        if (confBar) confBar.style.cssText = 'width:0%;';
+        if (confVal) { confVal.textContent = '0.00'; confVal.style.color = 'var(--accent)'; }
+      }
+    }
+
+    // Update map marker icon (alert vs online)
+    refreshMarker(bot);
+    renderDrawer();
+
+    console.log(`[AI] Person: ${detected} | Conf: ${confNorm.toFixed(2)}`);
+  });
+}
+
+/* ── RADAR LISTENER ── */
+function bindRadarListener() {
+  const radarRef = fbDb.ref('bot1/radar');
+  radarRef.on('value', (snap) => {
+    const data = snap.val();
+    if (!data) return;
+
+    const bot = allBots[0];
+    const presence = data.presence;
+
+    if (presence === true || presence === 'DETECTED' || presence === 'MOTION') {
+      bot.radar = 'MOTION';
+    } else {
+      bot.radar = 'CLEAR';
+    }
+
+    // Update modal radar (if open)
+    const modalRadar = document.getElementById('modal-radar-pres');
+    if (modalRadar) {
+      modalRadar.textContent = bot.radar;
+      modalRadar.className = bot.radar === 'CLEAR' ? 'rr-v ok' : 'rr-v warn';
+    }
+
+    renderDrawer();
+    console.log(`[RADAR] Presence: ${bot.radar}`);
+  });
+}
+
+/* ── CAMERA STREAM URL LISTENER ── */
+function bindCameraListener() {
+  const camRef = fbDb.ref('bot1/camera');
+  camRef.on('value', (snap) => {
+    const data = snap.val();
+    if (!data || !data.stream_url) return;
+
+    // Auto-populate the stream URL input in the modal (if open)
+    const urlInput = document.getElementById('modal-stream-url');
+    if (urlInput && !urlInput.value) {
+      urlInput.value = data.stream_url;
+    }
+
+    console.log(`[CAMERA] Stream URL updated: ${data.stream_url}`);
+  });
+}
+/* ════════════════════════════════════════════
+   RADAR DEEP-DIVE TERMINAL
+════════════════════════════════════════════ */
+let rdvSimInterval = null;
+const RDV_CHART_POINTS = 60; // 60s rolling window
+let rdvChartDataMacro = new Array(RDV_CHART_POINTS).fill(0);
+let rdvChartDataMicro = new Array(RDV_CHART_POINTS).fill(0);
+let rdvLastDetected = false;
+
+// Draw the static circular radar structure once on init
+function rdvInitPolar(){
+  const cx=110, cy=110, maxR=95;
+  const rings=document.getElementById('rdv-range-rings');
+  const labels=document.getElementById('rdv-range-labels');
+  const ticks=document.getElementById('rdv-ticks');
+  if(!rings) return;
+  rings.innerHTML=''; labels.innerHTML=''; if(ticks) ticks.innerHTML='';
+
+  // 6 full circular range rings (1m – 6m)
+  for(let i=1;i<=6;i++){
+    const r=(i/6)*maxR;
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',cx); circle.setAttribute('cy',cy); circle.setAttribute('r',r);
+    circle.setAttribute('fill','none');
+    circle.setAttribute('stroke',`rgba(0,207,255,${0.07+i*0.04})`);
+    circle.setAttribute('stroke-width', i===6 ? '1' : '0.7');
+    if(i<6) circle.setAttribute('stroke-dasharray','3,4');
+    rings.appendChild(circle);
+
+    // Distance label at top of each ring
+    const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x', cx+4); lbl.setAttribute('y', cy-r+6);
+    lbl.setAttribute('text-anchor','start');
+    lbl.setAttribute('font-family','monospace');
+    lbl.setAttribute('font-size','5');
+    lbl.setAttribute('fill','rgba(0,207,255,0.4)');
+    lbl.textContent=`${i}m`;
+    labels.appendChild(lbl);
+  }
+
+  // Degree tick marks every 30°
+  if(ticks){
+    for(let deg=0;deg<360;deg+=30){
+      const rad=degToRad(deg-90);
+      const innerR=maxR-4, outerR=maxR+1;
+      const x1=cx+innerR*Math.cos(rad), y1=cy+innerR*Math.sin(rad);
+      const x2=cx+outerR*Math.cos(rad), y2=cy+outerR*Math.sin(rad);
+      const tick=document.createElementNS('http://www.w3.org/2000/svg','line');
+      tick.setAttribute('x1',x1); tick.setAttribute('y1',y1);
+      tick.setAttribute('x2',x2); tick.setAttribute('y2',y2);
+      tick.setAttribute('stroke','rgba(0,207,255,0.4)'); tick.setAttribute('stroke-width','0.8');
+      ticks.appendChild(tick);
+
+      // Degree label every 90°
+      if(deg%90===0 && deg!==0 && deg!==90 && deg!==180 && deg!==270){
+        const lx=cx+(maxR+8)*Math.cos(rad), ly=cy+(maxR+8)*Math.sin(rad);
+        const dlbl=document.createElementNS('http://www.w3.org/2000/svg','text');
+        dlbl.setAttribute('x',lx); dlbl.setAttribute('y',ly);
+        dlbl.setAttribute('text-anchor','middle'); dlbl.setAttribute('dominant-baseline','middle');
+        dlbl.setAttribute('font-family','monospace'); dlbl.setAttribute('font-size','5');
+        dlbl.setAttribute('fill','rgba(0,207,255,0.3)');
+        dlbl.textContent=`${deg}°`;
+        ticks.appendChild(dlbl);
+      }
+    }
+  }
+}
+
+function degToRad(d){return d*Math.PI/180;}
+
+// Init VU bar segments
+function rdvInitVU(id, colour, count=12){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.innerHTML='';
+  for(let i=0;i<count;i++){
+    const seg=document.createElement('div');
+    seg.className='rdv-bar-v-seg';
+    seg.style.height='4px';
+    seg.style.background=colour;
+    seg.style.opacity='0.1';
+    el.appendChild(seg);
+  }
+}
+
+// Init gate heatmap cells
+function rdvInitGates(){
+  const grid=document.getElementById('rdv-gate-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  for(let i=0;i<9;i++){
+    const cell=document.createElement('div');
+    cell.className='rdv-gate-cell';
+    cell.id=`rdv-gate-${i}`;
+    cell.style.background='rgba(0,207,255,0.03)';
+    grid.appendChild(cell);
+  }
+}
+
+// Master update function — single entry point for all sensor data
+function updateRadarDeepDive(d){
+  const {detected=false, distance=0, macro=0, micro=0, rssi=-80, mode='NORMAL', gates=[50,60,70,80,70,60,40,30,20]}=d;
+
+  // Presence
+  const presEl=document.getElementById('rdv-presence');
+  if(presEl){
+    presEl.textContent=detected?'DETECTED':'CLEAR';
+    presEl.className='rdv-t-val '+(detected?'warn':'ok');
+  }
+
+  // Distance
+  const distEl=document.getElementById('rdv-distance');
+  if(distEl) distEl.textContent=detected?`${(distance/100).toFixed(2)} m`:'-- m';
+
+  // Target blip on polar chart
+  const blip=document.getElementById('rdv-target-blip');
+  const ring=document.getElementById('rdv-target-ring');
+  if(blip && ring){
+    if(detected && distance>0){
+      const maxR=95, angle=Math.random()*360;
+      const r=(Math.min(distance,600)/600)*maxR;
+      const bx=110+r*Math.cos(degToRad(angle));
+      const by=110+r*Math.sin(degToRad(angle));
+      blip.setAttribute('cx',bx); blip.setAttribute('cy',by); blip.setAttribute('opacity','1');
+      ring.setAttribute('cx',bx); ring.setAttribute('cy',by); ring.setAttribute('opacity','0.5');
+    } else {
+      blip.setAttribute('opacity','0'); ring.setAttribute('opacity','0');
+    }
+  }
+
+  // Macro VU bar
+  const macBars=document.getElementById('rdv-macro-bars');
+  const macVal=document.getElementById('rdv-macro-val');
+  if(macBars && macVal){
+    macVal.textContent=Math.floor(macro)+'%';
+    const segs=macBars.querySelectorAll('.rdv-bar-v-seg');
+    const thresh=Math.floor((macro/100)*segs.length);
+    segs.forEach((s,i)=>{
+      const active=i<thresh;
+      const intensity=i/segs.length;
+      s.style.height=active?(6+intensity*20)+'px':'4px';
+      s.style.opacity=active?'0.9':'0.08';
+      s.style.background=intensity>0.7?'#FF3C3C':intensity>0.4?'var(--a4)':'var(--accent)';
+    });
+  }
+
+  // Micro VU bar
+  const micBars=document.getElementById('rdv-micro-bars');
+  const micVal=document.getElementById('rdv-micro-val');
+  if(micBars && micVal){
+    micVal.textContent=Math.floor(micro)+'%';
+    const segs=micBars.querySelectorAll('.rdv-bar-v-seg');
+    const thresh=Math.floor((micro/100)*segs.length);
+    segs.forEach((s,i)=>{
+      const active=i<thresh;
+      const intensity=i/segs.length;
+      s.style.height=active?(6+intensity*20)+'px':'4px';
+      s.style.opacity=active?'0.9':'0.08';
+      s.style.background=intensity>0.7?'var(--a3)':'var(--a4)';
+    });
+  }
+
+  // RSSI bar
+  const rssiEl=document.getElementById('rdv-rssi');
+  const rssiBar=document.getElementById('rdv-rssi-bar');
+  if(rssiEl && rssiBar){
+    rssiEl.textContent=`${rssi.toFixed(1)} dBm`;
+    const pct=Math.max(0,Math.min(100,((rssi+100)/100)*100));
+    rssiBar.style.width=pct+'%';
+    rssiBar.style.background=pct>60?'var(--a2)':pct>30?'var(--a4)':'var(--a3)';
+  }
+
+  // Mode
+  const modeEl=document.getElementById('rdv-mode');
+  if(modeEl) modeEl.textContent=mode;
+
+  // Gate heatmap
+  gates.forEach((val,i)=>{
+    const cell=document.getElementById(`rdv-gate-${i}`);
+    if(!cell) return;
+    const norm=Math.min(100,Math.max(0,val))/100;
+    const r=Math.floor(norm*0); const g=Math.floor(norm*207); const b=Math.floor(norm*255);
+    cell.style.background=`rgba(${r},${g},${b},${0.1+norm*0.7})`;
+    cell.style.boxShadow=norm>0.5?`0 0 6px rgba(0,207,255,${norm*0.4})`:'none';
+  });
+
+  // Rolling chart update
+  rdvChartDataMacro.push(macro); if(rdvChartDataMacro.length>RDV_CHART_POINTS) rdvChartDataMacro.shift();
+  rdvChartDataMicro.push(micro); if(rdvChartDataMicro.length>RDV_CHART_POINTS) rdvChartDataMicro.shift();
+
+  // Detection event marker
+  if(detected && !rdvLastDetected){
+    const evG=document.getElementById('rdv-chart-events');
+    if(evG){
+      const xPos=(rdvChartDataMacro.length/RDV_CHART_POINTS)*600;
+      const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      tri.setAttribute('points',`${xPos},100 ${xPos-3},90 ${xPos+3},90`);
+      tri.setAttribute('fill','var(--a3)'); tri.setAttribute('opacity','0.8');
+      evG.appendChild(tri);
+    }
+  }
+  rdvLastDetected=detected;
+
+  rdvRedrawChart();
+}
+
+function rdvRedrawChart(){
+  const macLine=document.getElementById('rdv-chart-macro');
+  const micLine=document.getElementById('rdv-chart-micro');
+  if(!macLine||!micLine) return;
+  const n=rdvChartDataMacro.length;
+  const pts=(arr)=>arr.map((v,i)=>`${(i/(RDV_CHART_POINTS-1))*600},${100-(v)}`).join(' ');
+  macLine.setAttribute('points',pts(rdvChartDataMacro));
+  micLine.setAttribute('points',pts(rdvChartDataMicro));
+}
+
+// Realistic simulation
+function startRadarDeepDiveSim(){
+  let phase=0, detected=false, detTimer=0;
+  rdvSimInterval=setInterval(()=>{
+    phase+=0.08;
+    detTimer--;
+    if(detTimer<=0){
+      detected=Math.random()<0.15;
+      detTimer=detected?8+Math.floor(Math.random()*10):3+Math.floor(Math.random()*5);
+    }
+    const macro=detected?65+Math.sin(phase*1.3)*25+Math.random()*10:3+Math.random()*12;
+    const micro=detected?80+Math.sin(phase*2.1)*15+Math.random()*8:15+Math.sin(phase)*20+Math.random()*10;
+    const distance=detected?80+Math.sin(phase*0.5)*150+Math.random()*40:0;
+    const rssi=-45-Math.random()*30;
+    const gates=[70,75,80,90,85,70,55,40,25].map(v=>Math.max(0,Math.min(100,v+Math.sin(phase+Math.random())*15)));
+    updateRadarDeepDive({detected, distance, macro, micro, rssi, mode:'NORMAL', gates});
+  },800);
+}
+
+function openRadarDeepDive(){
+  document.querySelector('.main').classList.add('radar-mode');
+  // Init if first open
+  if(!document.getElementById('rdv-macro-bars').children.length){
+    rdvInitPolar();
+    rdvInitVU('rdv-macro-bars','var(--accent)');
+    rdvInitVU('rdv-micro-bars','var(--a4)');
+    rdvInitGates();
+  }
+  if(!rdvSimInterval) startRadarDeepDiveSim();
+}
+
+function closeRadarDeepDive(){
+  document.querySelector('.main').classList.remove('radar-mode');
+  // Keep simulation running so data is fresh when re-opened
+}
+
+// Add CSS sweep keyframe dynamically
+(function(){
+  const style=document.createElement('style');
+  style.textContent=`@keyframes rdvSweep360{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}`;
+  document.head.appendChild(style);
+})();
+
+/* ════════════════════════════════════════════
+   CAMERA TERMINALS — Mode Selector + Full-Screen
+════════════════════════════════════════════ */
+
+// Mode Selector
+function openCamSelector(){
+  document.getElementById('cam-mode-overlay').classList.add('active');
+}
+function closeCamSelector(){
+  document.getElementById('cam-mode-overlay').classList.remove('active');
+}
+
+// ── ESP-CAM TERMINAL ──
+function openEspCamTerminal(){
+  closeCamSelector();
+  document.getElementById('esp-cam-terminal').classList.add('active');
+}
+function closeEspCamTerminal(){
+  disconnectEspTerminal();
+  document.getElementById('esp-cam-terminal').classList.remove('active');
+}
+
+// ── AI-CAM TERMINAL ──
+let aiTelemetryTimer=null;
+
+function openAiCamTerminal(){
+  closeCamSelector();
+  document.getElementById('ai-cam-terminal').classList.add('active');
+}
+function closeAiCamTerminal(){
+  disconnectAiTerminal();
+  document.getElementById('ai-cam-terminal').classList.remove('active');
+}
+function connectAiTerminal(){
+  const url=document.getElementById('ai-ct-url').value.trim();
+  if(!url){alert('Enter re-stream server URL');return;}
+  const img=document.getElementById('ai-ct-img');
+  const ph=document.getElementById('ai-ct-placeholder');
+  img.src=url;
+  img.style.display='block';
+  if(ph) ph.style.display='none';
+  document.getElementById('ai-ct-badge').textContent='● AI STREAM ACTIVE';
+  document.getElementById('ai-ct-badge').classList.add('connected');
+  img.onerror=()=>{
+    alert('AI re-stream not available. Make sure "python main.py" is running.');
+    disconnectAiTerminal();
+  };
+  // Start live telemetry polling
+  startAiTelemetry();
+}
+function disconnectAiTerminal(){
+  const img=document.getElementById('ai-ct-img');
+  const ph=document.getElementById('ai-ct-placeholder');
+  img.onerror=null;
+  img.src=''; img.style.display='none';
+  if(ph) ph.style.display='block';
+  document.getElementById('ai-ct-badge').textContent='● WAITING FOR SENTINEL';
+  document.getElementById('ai-ct-badge').classList.remove('connected');
+  // Reset sidebar
+  ['ai-ct-fps','ai-ct-uptime','ai-ct-frames','ai-ct-detections','ai-ct-threat','ai-ct-persons','ai-ct-conf','ai-ct-lastalert','ai-ct-source'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent='—';
+  });
+  const tt=document.getElementById('ai-ct-threat-tile');
+  if(tt) tt.classList.remove('threat-pulse');
+  if(aiTelemetryTimer){clearInterval(aiTelemetryTimer);aiTelemetryTimer=null;}
+}
+
+function startAiTelemetry(){
+  if(aiTelemetryTimer) clearInterval(aiTelemetryTimer);
+  const baseUrl=document.getElementById('ai-ct-url').value.trim().replace('/feed','/status');
+  function poll(){
+    fetch(baseUrl).then(r=>r.json()).then(d=>{
+      const el=id=>document.getElementById(id);
+      el('ai-ct-fps').textContent=d.inference_fps+' FPS';
+      el('ai-ct-source').textContent=d.source||'—';
+      el('ai-ct-frames').textContent=d.frame_count?.toLocaleString()||'0';
+      el('ai-ct-detections').textContent=d.detect_count||'0';
+      el('ai-ct-persons').textContent=d.persons_in_frame||'0';
+      el('ai-ct-conf').textContent=d.confidence?d.confidence+'%':'—';
+      el('ai-ct-lastalert').textContent=d.last_alert||'NONE';
+      // Uptime formatting
+      const secs=d.uptime_s||0;
+      const m=Math.floor(secs/60), s=secs%60;
+      el('ai-ct-uptime').textContent=m+'m '+s+'s';
+      // Threat level
+      const threat=el('ai-ct-threat');
+      const tile=document.getElementById('ai-ct-threat-tile');
+      if(d.threat_active){
+        threat.textContent='⚠ THREAT';
+        threat.className='ct-stat-val red';
+        tile.classList.add('threat-pulse');
+      }else{
+        threat.textContent='CLEAR';
+        threat.className='ct-stat-val green';
+        tile.classList.remove('threat-pulse');
+      }
+    }).catch(()=>{});
+  }
+  poll();
+  aiTelemetryTimer=setInterval(poll,500);
+}
+
+// ── ESP-CAM TERMINAL (enhanced) ──
+function connectEspTerminal(){
+  const url=document.getElementById('esp-ct-url').value.trim();
+  if(!url){alert('Enter ESP32-CAM stream URL');return;}
+  const img=document.getElementById('esp-ct-img');
+  const ph=document.getElementById('esp-ct-placeholder');
+  img.src=url;
+  img.style.display='block';
+  if(ph) ph.style.display='none';
+  document.getElementById('esp-ct-badge').textContent='● STREAMING';
+  document.getElementById('esp-ct-badge').classList.add('connected');
+  document.getElementById('esp-ct-status').textContent='ONLINE';
+  document.getElementById('esp-ct-status').className='ct-stat-val green';
+  const tile=document.getElementById('esp-ct-status-tile');
+  if(tile) tile.classList.add('live-pulse');
+  img.onerror=()=>{
+    alert('ESP32 stream failed. Check IP and ensure no other client is connected.');
+    disconnectEspTerminal();
+  };
+}
+function disconnectEspTerminal(){
+  const img=document.getElementById('esp-ct-img');
+  const ph=document.getElementById('esp-ct-placeholder');
+  img.onerror=null;
+  img.src=''; img.style.display='none';
+  if(ph) ph.style.display='block';
+  document.getElementById('esp-ct-badge').textContent='● DISCONNECTED';
+  document.getElementById('esp-ct-badge').classList.remove('connected');
+  document.getElementById('esp-ct-status').textContent='OFFLINE';
+  document.getElementById('esp-ct-status').className='ct-stat-val amber';
+  const tile=document.getElementById('esp-ct-status-tile');
+  if(tile) tile.classList.remove('live-pulse');
+}
+</script>
+</body>
+</html>
