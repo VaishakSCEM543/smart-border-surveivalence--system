@@ -11,6 +11,10 @@
 
 ### 🖥️ Tactical C4ISR Dashboard
 The system's control center is a futuristic, glassmorphism-inspired terminal designed for high-stakes perimeter monitoring:
+
+![C4ISR Dashboard Active Terminal](DOCS/images/dash1.png)
+![Kinetics and Radar Deep-Dive](DOCS/images/dash2.png)
+
 - **Neural Targeting Matrix**: Live AI-processed video feed from the active swarm.
 - **Biometric Analytics**: Real-time confidence scoring and threat classification per unit.
 - **Radar Sweep**: Visualized mmWave HLK-LD2410C telemetry for motion tracking.
