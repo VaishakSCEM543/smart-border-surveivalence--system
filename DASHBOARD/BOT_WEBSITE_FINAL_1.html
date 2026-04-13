@@ -232,9 +232,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .op-close:hover{border-color:var(--a3);color:var(--a3);background:rgba(255,60,60,.08);box-shadow:0 0 15px rgba(255,60,60,.2);}
 .op-demo-banner{background:rgba(255,170,0,.08);border-bottom:1px solid rgba(255,170,0,.2);padding:6px 32px;font-family:var(--fm);font-size:10px;color:var(--a4);letter-spacing:4px;flex-shrink:0;}
 
-.op-grid{display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:1fr;gap:20px;padding:24px 32px;flex:1;overflow:hidden;background:radial-gradient(circle at 35% 45%,rgba(0,207,255,.03) 0%,transparent 70%);}
-.op-col-left{display:flex;flex-direction:column;gap:20px;height:100%;}
-.op-col-right{display:flex;flex-direction:column;gap:20px;height:100%;}
+.op-grid{display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:1fr;gap:20px;padding:24px 32px;flex:1;overflow:hidden;background:radial-gradient(circle at 35% 45%,rgba(0,207,255,.03) 0%,transparent 70%);min-height:0;}
+.op-col-left, .op-col-right {display:flex;flex-direction:column;gap:20px;height:100%;overflow-y:auto;overflow-x:hidden;padding-right:10px;min-height:0;}
+.op-col-left::-webkit-scrollbar, .op-col-right::-webkit-scrollbar {width:4px;}
+.op-col-left::-webkit-scrollbar-thumb, .op-col-right::-webkit-scrollbar-thumb {background:rgba(0,207,255,.2);border-radius:2px;}
 
 /* Panel inside console */
 .op-panel{background:rgba(4,10,16,.6);border:1px solid rgba(0,207,255,.15);box-shadow:inset 0 0 30px rgba(0,207,255,.02);backdrop-filter:blur(5px);display:flex;flex-direction:column;position:relative;clip-path:polygon(12px 0%,100% 0%,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);}
@@ -481,6 +482,41 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .ct-connect-bar input{flex:1;min-width:120px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);color:#fff;font-family:var(--fm);font-size:10px;padding:8px 10px;letter-spacing:1px;}
 .ct-connect-bar button{background:rgba(0,207,255,.1);border:1px solid rgba(0,207,255,.3);color:var(--accent);font-family:var(--fm);font-size:9px;padding:8px 14px;cursor:pointer;letter-spacing:2px;white-space:nowrap;}
 .ct-connect-bar button:hover{background:rgba(0,207,255,.2);}
+/* ── RADAR HARDWARE CANVAS ── */
+.canvas-shell {
+  position:relative; width:450px; height:450px; margin: 0 auto;
+  border:1px solid rgba(0,207,255,0.15); border-radius:50%;
+  box-shadow:0 0 40px rgba(0,207,255,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+  background:radial-gradient(circle,#020c12 60%,#010609 100%);
+  overflow:hidden; display: flex; align-items: center; justify-content: center;
+}
+#radarCanvas { width:100%; height:100%; display:block; }
+.dist-labels { display:flex; justify-content:space-between; width:450px; margin: 10px auto 0; font-size:9px; font-family:var(--fm); color:var(--accent); opacity:.4; letter-spacing:2px; }
+
+.rdv-telem-wrap .ip-row { display:flex; gap:6px; margin: 10px 0; }
+.rdv-telem-wrap .ip-row input {
+  flex:1; background:rgba(0,0,0,0.5); border:1px solid rgba(0,207,255,.2); color:#fff;
+  font-family:var(--fm); font-size:10px; padding:8px 10px; border-radius:2px; outline:none; text-align:center;
+}
+.rdv-telem-wrap .ip-row input:focus { border-color:var(--accent); }
+.rdv-telem-wrap .btn { background:rgba(0,207,255,.1); border:1px solid var(--accent); color:var(--accent); font-family:var(--fm); font-size:9px; letter-spacing:2px; padding:8px 14px; cursor:pointer; }
+.rdv-telem-wrap .btn:hover { background:rgba(0,207,255,.2); }
+.rdv-telem-wrap .btn.stop { border-color:var(--a3); color:var(--a3); background:rgba(255,60,60,.1); }
+
+.bot-badge {
+  text-align:center; padding:12px 10px; margin-top:8px;
+  border:1px solid rgba(0,207,255,.15); border-radius:2px;
+  font-family:var(--fd); font-size:12px; letter-spacing:2px;
+  color:var(--accent); background:rgba(0,0,0,.5);
+  transition:all .2s; display:flex; flex-direction:column; align-items:center; gap:6px;
+}
+.bot-badge.tracking {
+  color:var(--a4); text-shadow:0 0 16px var(--a4); background:rgba(255,170,0,.05); border-color:var(--a4);
+  animation:pulse-amber-bot 1s ease-in-out infinite;
+}
+@keyframes pulse-amber-bot { 0%,100%{box-shadow:0 0 8px rgba(255,170,0,.1);} 50%{box-shadow:0 0 22px rgba(255,170,0,.3);} }
+
+
 </style>
 </head>
 <body>
@@ -495,8 +531,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="l-box">
     <div class="l-logo">SENTINEL</div>
     <div class="l-ver">MULTI-BOT COMMAND SYSTEM v3.0</div>
-    <div class="l-field"><label>OPERATOR ID</label><input type="text" id="lu" placeholder="operator id" autocomplete="off"></div>
-    <div class="l-field"><label>ACCESS CODE</label><input type="password" id="lp" placeholder="access code"></div>
+    <div class="l-field"><label for="lu">OPERATOR ID</label><input type="text" id="lu" placeholder="operator id" autocomplete="off"></div>
+    <div class="l-field"><label for="lp">ACCESS CODE</label><input type="password" id="lp" placeholder="access code"></div>
     <div class="l-err" id="lerr"></div>
     <button class="l-btn" onclick="doLogin()">AUTHENTICATE</button>
     <div class="l-hint">Demo: <span>admin</span> / <span>1234</span></div>
@@ -623,53 +659,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <!-- SECTION 1: Circular Radar Visualization -->
         <div class="rdv-polar-wrap">
           <div class="rdv-sec-title">⬡ CIRCULAR DETECTION FIELD — 360° / 6m RANGE / HLK-LD2410C</div>
-          <div class="rdv-polar-svg-wrap">
-            <svg id="rdv-polar-svg" viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet" overflow="visible">
-              <defs>
-                <radialGradient id="rdvBgGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="rgba(0,207,255,0.12)"/>
-                  <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
-                </radialGradient>
-                <radialGradient id="rdvSweepGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="rgba(0,207,255,0.25)"/>
-                  <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
-                </radialGradient>
-              </defs>
-              <!-- Background fill -->
-              <circle cx="110" cy="110" r="100" fill="url(#rdvBgGrad)"/>
-              <!-- Static range rings (full circles) injected by JS -->
-              <g id="rdv-range-rings"></g>
-              <!-- Crosshair lines -->
-              <line x1="110" y1="10" x2="110" y2="210" stroke="rgba(0,207,255,0.08)" stroke-width="0.8" stroke-dasharray="2,4"/>
-              <line x1="10" y1="110" x2="210" y2="110" stroke="rgba(0,207,255,0.08)" stroke-width="0.8" stroke-dasharray="2,4"/>
-              <!-- 45° diagonal dashes -->
-              <line x1="39" y1="39" x2="181" y2="181" stroke="rgba(0,207,255,0.04)" stroke-width="0.6" stroke-dasharray="2,6"/>
-              <line x1="181" y1="39" x2="39" y2="181" stroke="rgba(0,207,255,0.04)" stroke-width="0.6" stroke-dasharray="2,6"/>
-              <!-- Range labels -->
-              <g id="rdv-range-labels"></g>
-              <!-- Full 360° sweep arm (rotating) -->
-              <g id="rdv-sweep-arm" style="transform-origin:110px 110px;animation:rdvSweep360 1.5s linear infinite;">
-                <!-- Volumetric sweep cone -->
-                <path d="M110,110 L110,15 A95,95 0 0,1 148,22 Z" fill="url(#rdvSweepGrad)"/>
-                <!-- Arm line -->
-                <line x1="110" y1="110" x2="110" y2="15" stroke="var(--accent)" stroke-width="1.5" opacity="0.9" filter="drop-shadow(0 0 3px var(--accent))"/>
-              </g>
-              <!-- Target blip -->
-              <circle id="rdv-target-blip" cx="110" cy="110" r="6" fill="var(--a3)" opacity="0" filter="drop-shadow(0 0 8px #FF3C3C)"/>
-              <circle id="rdv-target-ring" cx="110" cy="110" r="12" fill="none" stroke="var(--a3)" stroke-width="1" opacity="0"/>
-              <!-- Origin dot -->
-              <circle cx="110" cy="110" r="4" fill="var(--accent)" filter="drop-shadow(0 0 8px var(--accent))"/>
-              <!-- Degree tick marks around perimeter -->
-              <g id="rdv-ticks"></g>
-              <!-- Compass labels -->
-              <text x="110" y="8" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">N</text>
-              <text x="214" y="113" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">E</text>
-              <text x="110" y="217" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">S</text>
-              <text x="5" y="113" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(0,207,255,0.5)">W</text>
-              <!-- BOT-01 label -->
-              <text x="110" y="118" text-anchor="middle" font-family="monospace" font-size="5" fill="rgba(255,255,255,0.3)">BOT-01</text>
-            </svg>
+          <div class="canvas-shell">
+            <canvas id="radarCanvas" width="450" height="450"></canvas>
           </div>
+          <div class="dist-labels" id="distLabels"></div>
         </div>
 
         <!-- SECTION 2: Telemetry -->
@@ -688,75 +681,192 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
             </div>
           </div>
 
-          <!-- Energy VU bars -->
+          <!-- TARGET DETAILS -->
           <div class="rdv-tile-grid">
             <div class="rdv-tile">
-              <div class="rdv-t-lbl">MACRO-MOTION ENERGY</div>
-              <div class="rdv-t-val hi" id="rdv-macro-val">0%</div>
-              <div class="rdv-bar-v-wrap" id="rdv-macro-bars"></div>
+              <div class="rdv-t-lbl">MOVING TARGET</div>
+              <div class="rdv-t-val hi" id="rdv-move-dist">--- cm</div>
+              <div class="rdv-bar-h-wrap"><div class="rdv-bar-h-fill" id="rdv-move-bar" style="width:0%;background:var(--accent);"></div></div>
             </div>
             <div class="rdv-tile">
-              <div class="rdv-t-lbl">MICRO-MOTION ENERGY</div>
-              <div class="rdv-t-val amber" id="rdv-micro-val">0%</div>
-              <div class="rdv-bar-v-wrap" id="rdv-micro-bars"></div>
+              <div class="rdv-t-lbl">STATIONARY TARGET</div>
+              <div class="rdv-t-val amber" id="rdv-stat-dist">--- cm</div>
+              <div class="rdv-bar-h-wrap"><div class="rdv-bar-h-fill" id="rdv-stat-bar" style="width:0%;background:var(--a4);"></div></div>
             </div>
           </div>
 
-          <!-- RSSI + Mode row -->
-          <div class="rdv-tile-grid">
-            <div class="rdv-tile">
-              <div class="rdv-t-lbl">SIGNAL STRENGTH (RSSI)</div>
-              <div class="rdv-t-val hi" id="rdv-rssi">-- dBm</div>
-              <div class="rdv-bar-h-wrap"><div class="rdv-bar-h-fill" id="rdv-rssi-bar" style="width:0%;background:var(--accent);"></div></div>
-            </div>
-            <div class="rdv-tile">
-              <div class="rdv-t-lbl">SENSOR MODE</div>
-              <div class="rdv-t-val hi" id="rdv-mode">NORMAL</div>
-              <div style="margin-top:8px;font-family:var(--fm);font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;" id="rdv-freq">24.125 GHz</div>
-            </div>
-          </div>
-
-          <!-- Gate Sensitivity Heatmap -->
+          <!-- ODOMETER & IP -->
           <div class="rdv-tile" style="padding:14px 16px;">
-            <div class="rdv-t-lbl">GATE SENSITIVITY MAP (0.75m / GATE)</div>
-            <div class="rdv-gate-grid" id="rdv-gate-grid"></div>
-            <div class="rdv-gate-lbl-row">
-              <div class="rdv-gate-lbl">G0</div><div class="rdv-gate-lbl">G1</div><div class="rdv-gate-lbl">G2</div>
-              <div class="rdv-gate-lbl">G3</div><div class="rdv-gate-lbl">G4</div><div class="rdv-gate-lbl">G5</div>
-              <div class="rdv-gate-lbl">G6</div><div class="rdv-gate-lbl">G7</div><div class="rdv-gate-lbl">G8</div>
+            <div class="ip-row">
+              <input type="text" id="radarIp" placeholder="192.168.x.x (ESP32 IP)" value="192.168.1.100"/>
+              <button class="btn" id="radarConnectBtn" onclick="toggleRadarPolling()">CONNECT SENSOR</button>
+            </div>
+            
+            <div class="bot-badge idle" id="radarBotBadge">
+              <span id="radarBotIcon" style="font-size:24px;">⬛</span>
+              <span id="radarBotStateText">BOT IDLE</span>
+            </div>
+
+            <div class="rdv-t-lbl" style="margin-top:12px;">TOTAL ODOMETER DISTANCE</div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+              <div style="font-family:var(--fd);font-size:24px;color:var(--accent);text-shadow:0 0 12px var(--accent);" id="rdv-odo-mm">0</div>
+              <div style="font-family:var(--fm);font-size:10px;color:rgba(255,255,255,.5);"><span id="rdv-odo-cm">0.0 cm</span> &nbsp;|&nbsp; <span id="rdv-odo-m">0.000 m</span></div>
+            </div>
+            <div class="rdv-bar-h-wrap" style="height:6px;margin-top:8px;"><div class="rdv-bar-h-fill" id="rdv-odo-bar" style="width:0%;background:var(--accent);"></div></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end radar-deep-dive -->
+
+    <!-- MOBILITY DEEP-DIVE TERMINAL -->
+    <div id="mobility-deep-dive" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(2,6,9,0.95);z-index:900;backdrop-filter:blur(10px);flex-direction:column;">
+      <div class="rdv-header">
+        <div>
+          <div class="rdv-title">KINETICS & TRAJECTORY / ENCODER MOTOR + ToF</div>
+          <div class="rdv-sub">WHEEL RPS TRACKING & DISTANCE MEASUREMENT MODULE — BOT-01</div>
+        </div>
+        <div class="rdv-badge" id="mob-conn-badge">● TELEMETRY SYNCED</div>
+        <button class="rdv-back" onclick="closeMobilityDeepDive()">← BACK TO HUD</button>
+      </div>
+
+      <div class="rdv-body">
+        
+        <!-- SECTION 1: Engine Output -->
+        <div class="rdv-polar-wrap" style="flex:1;">
+          <div class="rdv-sec-title">⬡ POWERTRAIN METRICS (DUAL DIFFERENTIAL ENCODERS)</div>
+          
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;position:relative;">
+            <!-- Dual Canvas Gauge -->
+            <canvas id="mobRpmCanvas" width="450" height="280" style="position:absolute;top:30px;"></canvas>
+
+            <div style="margin-top:auto;width:100%;z-index:2;">
+               <div class="rdv-t-lbl" style="text-align:center;">MAX ODOMETER CAP (5000mm)</div>
+               <div class="rdv-bar-h-wrap" style="height:12px;margin-top:8px;border-radius:6px;overflow:hidden;border:1px solid rgba(0,207,255,.3);">
+                 <div class="rdv-bar-h-fill" id="mob-odo-huge-bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--a2));box-shadow:0 0 10px rgba(0,255,136,.5);"></div>
+               </div>
             </div>
           </div>
         </div>
 
-        <!-- SECTION 3: Rolling 60-second chart -->
-        <div class="rdv-chart-wrap">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div class="rdv-sec-title" style="padding:0;border:none;">⬡ 60-SECOND ENERGY HISTORY</div>
-            <div class="rdv-chart-legend">
-              <span><div class="rdv-legend-dot" style="background:#00CFFF;"></div><span style="color:rgba(255,255,255,.5);letter-spacing:2px;">MACRO</span></span>
-              <span><div class="rdv-legend-dot" style="background:#FFAA00;"></div><span style="color:rgba(255,255,255,.5);letter-spacing:2px;">MICRO</span></span>
+        <!-- SECTION 2: Lineage Tracking & Trajectory Log -->
+        <div class="rdv-telem-wrap" style="flex:1;">
+          <div class="rdv-sec-title" style="padding:0;border:none;">⬡ ADVANCED ToF COLLISION CORRIDOR & SENSOR LOG</div>
+
+          <!-- ToF 3D Canvas Tunnel -->
+          <div style="height:180px;width:100%;background:rgba(0,10,15,0.6);border:1px solid rgba(0,207,255,0.1);margin-bottom:15px;position:relative;overflow:hidden;">
+            <canvas id="mobTofCanvas" width="600" height="180" style="position:absolute;top:0;left:0;"></canvas>
+            
+            <div style="position:absolute;top:10px;left:10px;z-index:2;">
+              <div class="rdv-t-lbl">ToF SENSOR RAW RANGE</div>
+              <div class="rdv-t-val hi" id="mob-tof-huge" style="font-size:24px;text-shadow:0 0 10px var(--accent);">-- mm</div>
+            </div>
+            <div style="position:absolute;top:10px;right:10px;text-align:right;z-index:2;">
+              <div class="rdv-t-lbl">MOVEMENT VECTOR</div>
+              <div class="rdv-t-val amber" id="mob-vector" style="font-size:16px;">STATIC</div>
             </div>
           </div>
-          <div class="rdv-chart-svg-wrap">
-            <svg id="rdv-chart-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
-              <!-- Y-axis grid lines -->
-              <line x1="0" y1="25" x2="600" y2="25" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
-              <line x1="0" y1="50" x2="600" y2="50" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
-              <line x1="0" y1="75" x2="600" y2="75" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
-              <text x="2" y="25" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">75</text>
-              <text x="2" y="50" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">50</text>
-              <text x="2" y="75" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">25</text>
-              <!-- Data lines rendered by JS -->
-              <polyline id="rdv-chart-macro" fill="none" stroke="#00CFFF" stroke-width="1.5" opacity="0.8"/>
-              <polyline id="rdv-chart-micro" fill="none" stroke="#FFAA00" stroke-width="1.5" opacity="0.8"/>
-              <!-- Detection event markers -->
-              <g id="rdv-chart-events"></g>
-            </svg>
+
+          <!-- Rolling 60-second distance history chart (Migrated from Radar) -->
+          <div class="rdv-chart-wrap" style="flex:1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="rdv-sec-title" style="padding:0;border:none;font-size:10px;">⬡ 60-SECOND TARGET DISTANCE LOG</div>
+              <div class="rdv-chart-legend">
+                <span><div class="rdv-legend-dot" style="background:#00CFFF;"></div><span style="color:rgba(255,255,255,.5);letter-spacing:2px;font-size:8px;">MOVING</span></span>
+                <span><div class="rdv-legend-dot" style="background:#FFAA00;"></div><span style="color:rgba(255,255,255,.5);letter-spacing:2px;font-size:8px;">STATIONARY</span></span>
+              </div>
+            </div>
+            <div class="rdv-chart-svg-wrap" style="height:120px;">
+              <svg id="mob-chart-svg" viewBox="0 0 600 100" preserveAspectRatio="none">
+                <line x1="0" y1="25" x2="600" y2="25" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+                <line x1="0" y1="50" x2="600" y2="50" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+                <line x1="0" y1="75" x2="600" y2="75" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+                <text x="2" y="25" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">450</text>
+                <text x="2" y="50" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">300</text>
+                <text x="2" y="75" font-size="6" fill="rgba(255,255,255,.2)" font-family="monospace">150</text>
+                
+                <polyline id="mob-chart-move" fill="none" stroke="#00CFFF" stroke-width="1.5" opacity="0.8"/>
+                <polyline id="mob-chart-stat" fill="none" stroke="#FFAA00" stroke-width="1.5" opacity="0.8"/>
+                
+                <g id="mob-chart-events"></g>
+              </svg>
+            </div>
           </div>
+
         </div>
 
       </div>
-    </div><!-- end radar-deep-dive -->
+    </div><!-- end mobility-deep-dive -->
+
+    <!-- ══ AI DEEP-DIVE TERMINAL ══ -->
+    <div id="ai-deep-dive" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(2,4,8,0.98);z-index:900;backdrop-filter:blur(10px);flex-direction:column;">
+      <div class="rdv-header">
+        <div>
+          <div class="rdv-title">NEURAL NETWORK ENGINE / YOLOv8s</div>
+          <div class="rdv-sub">REAL-TIME TENSOR PROCESSING & THREAT CLASSIFICATION — BOT-01</div>
+        </div>
+        <div class="rdv-badge" id="ai-conn-badge">● INFERENCE RUNNING</div>
+        <button class="rdv-back" onclick="closeAiDeepDive()">← BACK TO HUD</button>
+      </div>
+
+      <div class="rdv-body" style="padding:20px;display:flex;gap:20px;flex:1;overflow:hidden;">
+        
+        <!-- Centerpiece: Bounding Box Canvas -->
+        <div style="flex:1.5;border:1px solid rgba(0,207,255,0.1);background:rgba(0,10,15,0.5);display:flex;flex-direction:column;position:relative;">
+          <div class="rdv-sec-title">⬡ NEURAL TARGETING MATRIX <span id="aiHybridBadge" style="float:right;color:var(--a2);font-family:var(--fm);letter-spacing:2px;font-size:9px;">REAL BACKEND ONLINE</span></div>
+          <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000;">
+             <!-- Real Backend Feed ONLY -->
+             <img id="aiStreamImg" src="http://127.0.0.1:5000/feed" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" onerror="this.alt='[CONNECTION ERROR] PYTHON SERVER NOT DETECTED AT 127.0.0.1:5000/feed';" alt="CONNECTING TO SERVER...">
+             
+             <!-- Crosshairs overlay -->
+             <div style="position:absolute;inset:0;background:linear-gradient(rgba(0,207,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,207,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;"></div>
+             <div style="position:absolute;top:50%;left:50%;width:100px;height:100px;transform:translate(-50%,-50%);border:1px solid rgba(0,207,255,0.1);border-radius:50%;pointer-events:none;"></div>
+             <div style="position:absolute;top:50%;left:50%;width:10px;height:10px;transform:translate(-50%,-50%);border:1px solid var(--accent);border-radius:50%;pointer-events:none;"></div>
+          </div>
+        </div>
+
+        <!-- Right Metrics Stack -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:15px;">
+           
+           <!-- Threat Matrix -->
+           <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(0,207,255,0.1);padding:15px;display:flex;flex-direction:column;gap:15px;" class="rs-group">
+              <div class="rdv-sec-title" style="padding:0;border:none;">⬡ CLASSIFICATION CONFIDENCE</div>
+              
+              <div>
+                 <div style="display:flex;justify-content:space-between;font-family:var(--fm);font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:5px;"><span>HOMINID / PERSON</span><span id="ai-conf-person" style="color:var(--a2)">92%</span></div>
+                 <div class="rs-bar-wrap"><div class="rs-bar" id="ai-bar-person" style="width:92%;background:var(--a2);box-shadow:0 0 10px var(--a2);"></div></div>
+              </div>
+              <div>
+                 <div style="display:flex;justify-content:space-between;font-family:var(--fm);font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:5px;"><span>VEHICLE / ASSET</span><span id="ai-conf-veh" style="color:var(--accent)">12%</span></div>
+                 <div class="rs-bar-wrap"><div class="rs-bar" id="ai-bar-veh" style="width:12%;background:var(--accent);"></div></div>
+              </div>
+              <div>
+                 <div style="display:flex;justify-content:space-between;font-family:var(--fm);font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:5px;"><span>ANOMALY / THREAT</span><span id="ai-conf-threat" style="color:var(--a3)">1%</span></div>
+                 <div class="rs-bar-wrap"><div class="rs-bar" id="ai-bar-threat" style="width:1%;background:var(--a3);"></div></div>
+              </div>
+           </div>
+
+           <!-- Latency Graph -->
+           <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(0,207,255,0.1);padding:15px;flex:1;display:flex;flex-direction:column;" class="rs-group">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                 <div class="rdv-sec-title" style="padding:0;border:none;">⬡ INFERENCE LATENCY</div>
+                 <div class="rdv-t-val hi" id="ai-fps-val" style="font-size:14px;color:var(--a4);">12 FPS</div>
+              </div>
+              <div style="flex:1;position:relative;">
+                 <canvas id="aiFpsCanvas" width="400" height="150" style="width:100%;height:100%;display:block;"></canvas>
+              </div>
+           </div>
+
+           <!-- Raw Tensor Log -->
+           <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(0,207,255,0.1);padding:15px;height:120px;display:flex;flex-direction:column;" class="rs-group">
+              <div class="rdv-sec-title" style="padding:0;border:none;margin-bottom:10px;">⬡ RAW TENSOR DATASTREAM</div>
+              <div id="ai-tensor-log" style="flex:1;overflow-y:hidden;font-family:var(--fm);font-size:8px;color:var(--tdim);display:flex;flex-direction:column;justify-content:flex-end;gap:4px;">
+                 <!-- JS will populate scrolling rows here -->
+              </div>
+           </div>
+
+        </div>
+      </div>
+    </div><!-- end ai-deep-dive -->
 
     <!-- ══ CAMERA MODE SELECTOR ══ -->
     <div id="cam-mode-overlay" class="cam-mode-overlay">
@@ -1151,39 +1261,94 @@ function buildLiveConsole(bot){
 
     <!-- LEFT COLUMN -->
     <div class="op-col-left">
+
       <!-- CAMERA HERO — click to open mode selector -->
-      <div class="op-panel hero" style="flex:1;cursor:pointer;" onclick="openCamSelector()" title="CLICK TO SELECT CAMERA MODE">
+      <div class="op-panel hero" style="flex:0.4;cursor:pointer;" onclick="openCamSelector()" title="CLICK TO SELECT CAMERA MODE">
         <div class="mp-header">
           <div class="mp-title">OPTICAL SENSOR FEED</div>
           <div class="mp-badge live" id="modal-cam-badge">⤢ SELECT MODE</div>
         </div>
-        <div class="cam-area" id="modal-cam-area">
+        <div class="cam-area" id="modal-cam-area" style="min-height: 140px; border-bottom:none;">
           <div class="cam-corners">
             <div class="c tl"></div><div class="c tr"></div>
             <div class="c bl"></div><div class="c br"></div>
           </div>
-          <div class="rec-chip" id="modal-rec" style="display:none"><div class="rd"></div>LIVE</div>
           <div class="cam-placeholder" id="modal-cam-ph">
-            <div class="cam-icon">⬡</div>
-            <div class="cam-txt">AWAITING STREAM URL<br>ENTER ESP32-CAM ADDRESS BELOW</div>
+            <div class="cam-icon" style="margin-bottom:8px;">⬡</div>
+            <div class="cam-txt">CLICK TO OPEN FULL-SCREEN<br>OPTICAL SENSOR TERMINALS</div>
           </div>
-          <img id="modal-cam-img" style="display:none;width:100%;height:100%;object-fit:cover;" alt="stream">
-        </div>
-        <div class="cam-controls">
-          <input type="text" id="modal-stream-url" placeholder="http://192.168.x.x:81/stream">
-          <button class="cbtn" onclick="connectModalStream()">CONNECT</button>
-          <button class="cbtn disc" onclick="disconnectModalStream()">DISC.</button>
         </div>
       </div>
+
+      <!-- KINETICS & TRAJECTORY MODULE -->
+      <div class="op-panel adv-radar-panel-clickable" style="flex:0.6;cursor:pointer;margin-top:20px;" onclick="openMobilityDeepDive()" title="CLICK TO OPEN MOBILITY TERMINAL">
+        <div class="mp-header"><div class="mp-title">KINETICS & TRAJECTORY (ENCODER + ToF)</div><div class="mp-badge live">⤢ CLICK TO EXPAND</div></div>
+        <div class="adv-radar-panel" style="flex-direction:row;align-items:stretch;height:100%;padding:0;">
+           
+           <!-- Left Visual Area -->
+           <div style="flex:1;border-right:1px solid rgba(0,207,255,0.1);display:flex;flex-direction:column;position:relative;background:rgba(0,10,15,0.4);overflow:hidden;">
+              <div class="rs-group" style="padding:12px;background:rgba(0,0,0,0.3);position:absolute;top:0;width:100%;z-index:2;border-bottom:1px solid rgba(0,207,255,0.1);">
+                 <div class="rs-lbl">MOBILITY STATE</div>
+                 <div class="rs-val ok" id="hud-mob-state" style="font-size:12px;text-shadow:0 0 8px var(--a1);">STATIC / HOLDING POSITION</div>
+              </div>
+              
+              <!-- Top-Down Chassis Wireframe Graphic -->
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;margin-top:40px;">
+                <svg viewBox="0 0 100 120" style="width:70px;height:90px;overflow:visible;">
+                  <!-- ToF Cone (Animated via JS) -->
+                  <polygon id="hud-tof-cone" points="50,0 20,-40 80,-40" fill="url(#tofGrad)" opacity="0"/>
+                  <!-- Tracks -->
+                  <rect id="hud-track-l" x="10" y="20" width="15" height="80" fill="none" stroke="rgba(0,207,255,0.3)" stroke-width="1.5" stroke-dasharray="2,2"/>
+                  <rect id="hud-track-r" x="75" y="20" width="15" height="80" fill="none" stroke="rgba(0,207,255,0.3)" stroke-width="1.5" stroke-dasharray="2,2"/>
+                  <!-- Chassis Body -->
+                  <rect x="30" y="25" width="40" height="70" fill="rgba(0,207,255,0.05)" stroke="var(--accent)" stroke-width="1.5"/>
+                  <circle cx="50" cy="60" r="10" fill="none" stroke="rgba(0,207,255,0.6)" stroke-width="1"/>
+                  <circle cx="50" cy="60" r="2" fill="var(--accent)"/>
+                  <line id="hud-tof-beam" x1="50" y1="25" x2="50" y2="15" stroke="rgba(0,207,255,0.3)" stroke-width="2"/>
+                  <defs>
+                    <linearGradient id="tofGrad" x1="0" y1="1" x2="0" y2="0">
+                      <stop offset="0%" stop-color="rgba(0,207,255,0.4)"/>
+                      <stop offset="100%" stop-color="rgba(0,207,255,0)"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+           </div>
+
+           <!-- Right Telemetry Area -->
+           <div style="flex:1;display:flex;flex-direction:column;padding:12px;">
+             <!-- Wheel RPM -->
+             <div class="rs-group" style="margin-bottom:12px;">
+                <div class="rs-lbl">MOTOR ENCODER SPEED</div>
+                <div class="rs-val hi" id="hud-mob-rpm">0 <span style="font-size:10px;color:rgba(255,255,255,.4);">RPM</span></div>
+                <div class="rs-bar-wrap"><div class="rs-bar" id="hud-mob-rpm-bar" style="width:0%;background:var(--accent);"></div></div>
+             </div>
+             <!-- ToF Range -->
+             <div class="rs-group" style="margin-bottom:12px;">
+                <div class="rs-lbl">ToF SENSOR RANGE</div>
+                <div class="rs-val hi" id="hud-mob-tof">-- <span style="font-size:10px;color:rgba(255,255,255,.4);">mm</span></div>
+                <div class="rs-bar-wrap"><div class="rs-bar" id="hud-mob-tof-bar" style="width:0%;background:var(--a4);"></div></div>
+             </div>
+             <!-- Mini Odometer -->
+             <div class="rs-group" style="margin-top:auto;">
+                <div class="rs-lbl">TRAJECTORY / ODOMETER</div>
+                <div class="rs-val cyan" id="hud-mob-odo-mm" style="color:var(--a2);text-shadow:0 0 10px rgba(0,255,136,0.3);font-size:24px;">0 <span style="font-size:12px;color:var(--a2);">mm</span></div>
+                <div style="font-family:var(--fm);font-size:8px;color:rgba(255,255,255,.4);margin-top:2px;letter-spacing:1px;"><span id="hud-mob-odo-m">0.000</span> m MEASURED</div>
+             </div>
+           </div>
+
+        </div>
+      </div>
+
     </div> <!-- END LEFT COL -->
 
     <!-- RIGHT COLUMN -->
     <div class="op-col-right">
       <!-- AI ENGINE -->
-      <div class="op-panel">
+      <div class="op-panel adv-radar-panel-clickable" style="cursor:pointer;" onclick="openAiDeepDive()" title="CLICK TO OPEN NEURAL NETWORK TERMINAL">
         <div class="mp-header">
           <div class="mp-title">AI ENGINE (YOLOv8s)</div>
-          <div class="mp-badge" id="modal-ai-badge">8 FPS · LOOP B</div>
+          <div class="mp-badge live" id="modal-ai-badge">⤢ CLICK TO EXPAND</div>
         </div>
         <div class="ai-mini">
           <div class="aim-status clear" id="modal-aim-box">
@@ -1645,7 +1810,7 @@ function initFirebase() {
       projectId: "REPLACE_WITH_YOUR_FIREBASE_PROJECT_ID",
       storageBucket: "REPLACE_WITH_YOUR_FIREBASE_STORAGE_BUCKET",
       messagingSenderId: "REPLACE_WITH_YOUR_FIREBASE_MESSAGING_SENDER_ID",
-      appId: "REPLACE_WITH_YOUR_FIREBASE_APP_ID",
+      appId: "1:REPLACE_WITH_YOUR_FIREBASE_MESSAGING_SENDER_ID:web:788b6f6706cade035229b5",
       measurementId: "REPLACE_WITH_YOUR_FIREBASE_MEASUREMENT_ID"
     };
 
@@ -1865,255 +2030,573 @@ let rdvChartDataMacro = new Array(RDV_CHART_POINTS).fill(0);
 let rdvChartDataMicro = new Array(RDV_CHART_POINTS).fill(0);
 let rdvLastDetected = false;
 
-// Draw the static circular radar structure once on init
-function rdvInitPolar(){
-  const cx=110, cy=110, maxR=95;
-  const rings=document.getElementById('rdv-range-rings');
-  const labels=document.getElementById('rdv-range-labels');
-  const ticks=document.getElementById('rdv-ticks');
-  if(!rings) return;
-  rings.innerHTML=''; labels.innerHTML=''; if(ticks) ticks.innerHTML='';
+/* ════════════════════════════════════════════
+   RADAR DEEP DIVE ENGINE (Hardware canvas integration)
+════════════════════════════════════════════ */
+// Config
+const RADAR_MAX_DIST = 600;
+const RADAR_RING_COUNT = 6;
+const RADAR_SWEEP_SPEED = 2;
+const RADAR_TRAIL_DECAY = 0.04;
+const RADAR_HIST_LEN = 60;
+const RADAR_POLL_MS = 200;
+const RADAR_ODO_MAX_MM = 5000; 
 
-  // 6 full circular range rings (1m – 6m)
-  for(let i=1;i<=6;i++){
-    const r=(i/6)*maxR;
-    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    circle.setAttribute('cx',cx); circle.setAttribute('cy',cy); circle.setAttribute('r',r);
-    circle.setAttribute('fill','none');
-    circle.setAttribute('stroke',`rgba(0,207,255,${0.07+i*0.04})`);
-    circle.setAttribute('stroke-width', i===6 ? '1' : '0.7');
-    if(i<6) circle.setAttribute('stroke-dasharray','3,4');
-    rings.appendChild(circle);
+// State
+let radarPollTimer = null;
+let radarSweepAngle = -90;
+let radarLastData = null;
+let radarBlips = [];
+let radarHistMove = new Array(RADAR_HIST_LEN).fill(0);
+let radarHistStat = new Array(RADAR_HIST_LEN).fill(0);
+let radarFailCount = 0;
+let radarGlowCanvas = null;
+let radarRunning = false;
 
-    // Distance label at top of each ring
-    const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
-    lbl.setAttribute('x', cx+4); lbl.setAttribute('y', cy-r+6);
-    lbl.setAttribute('text-anchor','start');
-    lbl.setAttribute('font-family','monospace');
-    lbl.setAttribute('font-size','5');
-    lbl.setAttribute('fill','rgba(0,207,255,0.4)');
-    lbl.textContent=`${i}m`;
-    labels.appendChild(lbl);
-  }
-
-  // Degree tick marks every 30°
-  if(ticks){
-    for(let deg=0;deg<360;deg+=30){
-      const rad=degToRad(deg-90);
-      const innerR=maxR-4, outerR=maxR+1;
-      const x1=cx+innerR*Math.cos(rad), y1=cy+innerR*Math.sin(rad);
-      const x2=cx+outerR*Math.cos(rad), y2=cy+outerR*Math.sin(rad);
-      const tick=document.createElementNS('http://www.w3.org/2000/svg','line');
-      tick.setAttribute('x1',x1); tick.setAttribute('y1',y1);
-      tick.setAttribute('x2',x2); tick.setAttribute('y2',y2);
-      tick.setAttribute('stroke','rgba(0,207,255,0.4)'); tick.setAttribute('stroke-width','0.8');
-      ticks.appendChild(tick);
-
-      // Degree label every 90°
-      if(deg%90===0 && deg!==0 && deg!==90 && deg!==180 && deg!==270){
-        const lx=cx+(maxR+8)*Math.cos(rad), ly=cy+(maxR+8)*Math.sin(rad);
-        const dlbl=document.createElementNS('http://www.w3.org/2000/svg','text');
-        dlbl.setAttribute('x',lx); dlbl.setAttribute('y',ly);
-        dlbl.setAttribute('text-anchor','middle'); dlbl.setAttribute('dominant-baseline','middle');
-        dlbl.setAttribute('font-family','monospace'); dlbl.setAttribute('font-size','5');
-        dlbl.setAttribute('fill','rgba(0,207,255,0.3)');
-        dlbl.textContent=`${deg}°`;
-        ticks.appendChild(dlbl);
-      }
-    }
-  }
-}
-
-function degToRad(d){return d*Math.PI/180;}
-
-// Init VU bar segments
-function rdvInitVU(id, colour, count=12){
-  const el=document.getElementById(id);
-  if(!el) return;
-  el.innerHTML='';
-  for(let i=0;i<count;i++){
-    const seg=document.createElement('div');
-    seg.className='rdv-bar-v-seg';
-    seg.style.height='4px';
-    seg.style.background=colour;
-    seg.style.opacity='0.1';
-    el.appendChild(seg);
-  }
-}
-
-// Init gate heatmap cells
-function rdvInitGates(){
-  const grid=document.getElementById('rdv-gate-grid');
-  if(!grid) return;
-  grid.innerHTML='';
-  for(let i=0;i<9;i++){
-    const cell=document.createElement('div');
-    cell.className='rdv-gate-cell';
-    cell.id=`rdv-gate-${i}`;
-    cell.style.background='rgba(0,207,255,0.03)';
-    grid.appendChild(cell);
-  }
-}
-
-// Master update function — single entry point for all sensor data
-function updateRadarDeepDive(d){
-  const {detected=false, distance=0, macro=0, micro=0, rssi=-80, mode='NORMAL', gates=[50,60,70,80,70,60,40,30,20]}=d;
-
-  // Presence
-  const presEl=document.getElementById('rdv-presence');
-  if(presEl){
-    presEl.textContent=detected?'DETECTED':'CLEAR';
-    presEl.className='rdv-t-val '+(detected?'warn':'ok');
-  }
-
-  // Distance
-  const distEl=document.getElementById('rdv-distance');
-  if(distEl) distEl.textContent=detected?`${(distance/100).toFixed(2)} m`:'-- m';
-
-  // Target blip on polar chart
-  const blip=document.getElementById('rdv-target-blip');
-  const ring=document.getElementById('rdv-target-ring');
-  if(blip && ring){
-    if(detected && distance>0){
-      const maxR=95, angle=Math.random()*360;
-      const r=(Math.min(distance,600)/600)*maxR;
-      const bx=110+r*Math.cos(degToRad(angle));
-      const by=110+r*Math.sin(degToRad(angle));
-      blip.setAttribute('cx',bx); blip.setAttribute('cy',by); blip.setAttribute('opacity','1');
-      ring.setAttribute('cx',bx); ring.setAttribute('cy',by); ring.setAttribute('opacity','0.5');
-    } else {
-      blip.setAttribute('opacity','0'); ring.setAttribute('opacity','0');
-    }
-  }
-
-  // Macro VU bar
-  const macBars=document.getElementById('rdv-macro-bars');
-  const macVal=document.getElementById('rdv-macro-val');
-  if(macBars && macVal){
-    macVal.textContent=Math.floor(macro)+'%';
-    const segs=macBars.querySelectorAll('.rdv-bar-v-seg');
-    const thresh=Math.floor((macro/100)*segs.length);
-    segs.forEach((s,i)=>{
-      const active=i<thresh;
-      const intensity=i/segs.length;
-      s.style.height=active?(6+intensity*20)+'px':'4px';
-      s.style.opacity=active?'0.9':'0.08';
-      s.style.background=intensity>0.7?'#FF3C3C':intensity>0.4?'var(--a4)':'var(--accent)';
-    });
-  }
-
-  // Micro VU bar
-  const micBars=document.getElementById('rdv-micro-bars');
-  const micVal=document.getElementById('rdv-micro-val');
-  if(micBars && micVal){
-    micVal.textContent=Math.floor(micro)+'%';
-    const segs=micBars.querySelectorAll('.rdv-bar-v-seg');
-    const thresh=Math.floor((micro/100)*segs.length);
-    segs.forEach((s,i)=>{
-      const active=i<thresh;
-      const intensity=i/segs.length;
-      s.style.height=active?(6+intensity*20)+'px':'4px';
-      s.style.opacity=active?'0.9':'0.08';
-      s.style.background=intensity>0.7?'var(--a3)':'var(--a4)';
-    });
-  }
-
-  // RSSI bar
-  const rssiEl=document.getElementById('rdv-rssi');
-  const rssiBar=document.getElementById('rdv-rssi-bar');
-  if(rssiEl && rssiBar){
-    rssiEl.textContent=`${rssi.toFixed(1)} dBm`;
-    const pct=Math.max(0,Math.min(100,((rssi+100)/100)*100));
-    rssiBar.style.width=pct+'%';
-    rssiBar.style.background=pct>60?'var(--a2)':pct>30?'var(--a4)':'var(--a3)';
-  }
-
-  // Mode
-  const modeEl=document.getElementById('rdv-mode');
-  if(modeEl) modeEl.textContent=mode;
-
-  // Gate heatmap
-  gates.forEach((val,i)=>{
-    const cell=document.getElementById(`rdv-gate-${i}`);
-    if(!cell) return;
-    const norm=Math.min(100,Math.max(0,val))/100;
-    const r=Math.floor(norm*0); const g=Math.floor(norm*207); const b=Math.floor(norm*255);
-    cell.style.background=`rgba(${r},${g},${b},${0.1+norm*0.7})`;
-    cell.style.boxShadow=norm>0.5?`0 0 6px rgba(0,207,255,${norm*0.4})`:'none';
-  });
-
-  // Rolling chart update
-  rdvChartDataMacro.push(macro); if(rdvChartDataMacro.length>RDV_CHART_POINTS) rdvChartDataMacro.shift();
-  rdvChartDataMicro.push(micro); if(rdvChartDataMicro.length>RDV_CHART_POINTS) rdvChartDataMicro.shift();
-
-  // Detection event marker
-  if(detected && !rdvLastDetected){
-    const evG=document.getElementById('rdv-chart-events');
-    if(evG){
-      const xPos=(rdvChartDataMacro.length/RDV_CHART_POINTS)*600;
-      const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-      tri.setAttribute('points',`${xPos},100 ${xPos-3},90 ${xPos+3},90`);
-      tri.setAttribute('fill','var(--a3)'); tri.setAttribute('opacity','0.8');
-      evG.appendChild(tri);
-    }
-  }
-  rdvLastDetected=detected;
-
-  rdvRedrawChart();
-}
-
-function rdvRedrawChart(){
-  const macLine=document.getElementById('rdv-chart-macro');
-  const micLine=document.getElementById('rdv-chart-micro');
-  if(!macLine||!micLine) return;
-  const n=rdvChartDataMacro.length;
-  const pts=(arr)=>arr.map((v,i)=>`${(i/(RDV_CHART_POINTS-1))*600},${100-(v)}`).join(' ');
-  macLine.setAttribute('points',pts(rdvChartDataMacro));
-  micLine.setAttribute('points',pts(rdvChartDataMicro));
-}
-
-// Realistic simulation
-function startRadarDeepDiveSim(){
-  let phase=0, detected=false, detTimer=0;
-  rdvSimInterval=setInterval(()=>{
-    phase+=0.08;
-    detTimer--;
-    if(detTimer<=0){
-      detected=Math.random()<0.15;
-      detTimer=detected?8+Math.floor(Math.random()*10):3+Math.floor(Math.random()*5);
-    }
-    const macro=detected?65+Math.sin(phase*1.3)*25+Math.random()*10:3+Math.random()*12;
-    const micro=detected?80+Math.sin(phase*2.1)*15+Math.random()*8:15+Math.sin(phase)*20+Math.random()*10;
-    const distance=detected?80+Math.sin(phase*0.5)*150+Math.random()*40:0;
-    const rssi=-45-Math.random()*30;
-    const gates=[70,75,80,90,85,70,55,40,25].map(v=>Math.max(0,Math.min(100,v+Math.sin(phase+Math.random())*15)));
-    updateRadarDeepDive({detected, distance, macro, micro, rssi, mode:'NORMAL', gates});
-  },800);
-}
-
-function openRadarDeepDive(){
+// Open/Close
+function openRadarDeepDive() {
   document.querySelector('.main').classList.add('radar-mode');
-  // Init if first open
-  if(!document.getElementById('rdv-macro-bars').children.length){
-    rdvInitPolar();
-    rdvInitVU('rdv-macro-bars','var(--accent)');
-    rdvInitVU('rdv-micro-bars','var(--a4)');
-    rdvInitGates();
-  }
-  if(!rdvSimInterval) startRadarDeepDiveSim();
+  if(!radarGlowCanvas) initRadarCanvas();
+  radarRunning = true;
+  requestAnimationFrame(renderRadar);
 }
 
-function closeRadarDeepDive(){
+function closeRadarDeepDive() {
   document.querySelector('.main').classList.remove('radar-mode');
-  // Keep simulation running so data is fresh when re-opened
+  radarRunning = false;
+  // Let polling continue in background so when we reopen, data is fresh
 }
 
-// Add CSS sweep keyframe dynamically
-(function(){
-  const style=document.createElement('style');
-  style.textContent=`@keyframes rdvSweep360{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}`;
-  document.head.appendChild(style);
-})();
+function initRadarCanvas() {
+  const labels = ['0'];
+  for (let i = 1; i <= RADAR_RING_COUNT; i++) labels.push(Math.round((RADAR_MAX_DIST/RADAR_RING_COUNT)*i)+'cm');
+  document.getElementById('distLabels').innerHTML = labels.map(l=>`<span>${l}</span>`).join('');
+  
+  radarGlowCanvas = document.createElement('canvas');
+  radarGlowCanvas.width = 450; 
+  radarGlowCanvas.height = 450;
+}
+
+// Draw logic
+function toXY(a, dist) {
+  const R = 450/2 - 10;
+  const r = (dist/RADAR_MAX_DIST)*R;
+  const rad = (a-90)*Math.PI/180;
+  return { x: 225+r*Math.cos(rad), y: 225+r*Math.sin(rad) };
+}
+
+function renderRadar() {
+  if(!radarRunning) return;
+  requestAnimationFrame(renderRadar);
+  
+  const canvas = document.getElementById('radarCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const glowCtx = radarGlowCanvas.getContext('2d');
+  const W = 450, H = 450, CX = 225, CY = 225, R = 215;
+
+  radarSweepAngle = (radarSweepAngle + RADAR_SWEEP_SPEED) % 360;
+
+  if (radarLastData && radarLastData.presence) {
+    if (radarLastData.moving && radarLastData.move_dist>0 && Math.random()<.15)
+      radarBlips.push({ angle:radarSweepAngle+(Math.random()-.5)*8, dist:radarLastData.move_dist+(Math.random()-.5)*10, age:0, type:'moving' });
+    if (radarLastData.stationary && radarLastData.stat_dist>0 && Math.random()<.10)
+      radarBlips.push({ angle:radarSweepAngle+(Math.random()-.5)*6, dist:radarLastData.stat_dist+(Math.random()-.5)*8, age:0, type:'stationary' });
+  }
+
+  glowCtx.fillStyle=`rgba(2,12,18,${RADAR_TRAIL_DECAY})`; glowCtx.fillRect(0,0,W,H);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='rgba(2,12,18,0.7)'; ctx.fillRect(0,0,W,H);
+  ctx.drawImage(radarGlowCanvas,0,0);
+  
+  // Grid
+  ctx.save();
+  for (let i=1; i<=RADAR_RING_COUNT; i++) {
+    const r = (i/RADAR_RING_COUNT)*R;
+    ctx.beginPath(); ctx.arc(CX,CY,r,0,Math.PI*2);
+    ctx.strokeStyle = `rgba(0,207,255,${i===RADAR_RING_COUNT?0.25:0.08})`; ctx.lineWidth=.8; ctx.stroke();
+  }
+  [0,45,90,135].forEach(a => {
+    const rad=(a-90)*Math.PI/180;
+    ctx.beginPath();
+    ctx.moveTo(CX,CY); ctx.lineTo(CX+R*Math.cos(rad),CY+R*Math.sin(rad));
+    ctx.moveTo(CX,CY); ctx.lineTo(CX-R*Math.cos(rad),CY-R*Math.sin(rad));
+    ctx.strokeStyle='rgba(0,207,255,0.08)'; ctx.lineWidth=.8; ctx.stroke();
+  });
+  ctx.fillStyle='rgba(0,207,255,0.35)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  [0,45,90,135,180,225,270,315].forEach(a => {
+    const rad=(a-90)*Math.PI/180;
+    ctx.fillText(a+'°', CX+(R+14)*Math.cos(rad), CY+(R+14)*Math.sin(rad)+3);
+  });
+  ctx.restore();
+
+  // Sweep
+  ctx.save();
+  for (let i=0; i<60; i++) {
+    const a = (radarSweepAngle-i-90)*Math.PI/180;
+    ctx.beginPath(); ctx.moveTo(CX,CY);
+    ctx.arc(CX,CY,R,a,a+1.1*Math.PI/180); ctx.closePath();
+    ctx.fillStyle=`rgba(0,207,255,${((60-i)/60)*0.45})`; ctx.fill();
+  }
+  const sr = (radarSweepAngle-90)*Math.PI/180;
+  ctx.beginPath(); ctx.moveTo(CX,CY);
+  ctx.lineTo(CX+R*Math.cos(sr), CY+R*Math.sin(sr));
+  ctx.strokeStyle='rgba(0,207,255,0.95)'; ctx.lineWidth=1.5;
+  ctx.shadowBlur=10; ctx.shadowColor='#00cfff'; ctx.stroke();
+  ctx.restore();
+
+  // Blips
+  radarBlips.forEach(b => {
+    const pos = toXY(b.angle, b.dist);
+    const alpha = Math.max(0, 1-b.age/60);
+    const color = b.type==='moving' ? `rgba(0,207,255,${alpha})` : `rgba(255,170,0,${alpha})`;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(pos.x,pos.y, b.type==='moving'?6:5, 0,Math.PI*2);
+    ctx.fillStyle=color; ctx.shadowBlur=14;
+    ctx.shadowColor=b.type==='moving'?'#00cfff':'#ffaa00'; ctx.fill();
+    if (b.age<20) {
+      ctx.beginPath(); ctx.arc(pos.x,pos.y, (b.type==='moving'?6:5)+b.age*.8, 0,Math.PI*2);
+      ctx.strokeStyle=b.type==='moving'?`rgba(0,207,255,${.4-b.age*.02})`:`rgba(255,170,0,${.4-b.age*.02})`;
+      ctx.lineWidth=1; ctx.stroke();
+    }
+    ctx.restore();
+    b.age++;
+  });
+  radarBlips = radarBlips.filter(b=>b.age<60);
+
+  // Bot Arrow
+  const isMoving = radarLastData && radarLastData.bot_moving;
+  ctx.save();
+  ctx.translate(CX, CY);
+  const bcolor = isMoving ? '#ffaa00' : '#00cfff';
+  ctx.shadowBlur = isMoving ? 18 : 10;
+  ctx.shadowColor = bcolor;
+  ctx.strokeStyle = bcolor;
+  ctx.fillStyle   = bcolor;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,-18); ctx.lineTo(-6,-8); ctx.lineTo(6,-8); ctx.closePath(); ctx.fill();
+  [[-7,4],[7,4]].forEach(([dx,dy]) => {
+    ctx.beginPath(); ctx.arc(dx,dy,3,0,Math.PI*2); ctx.fillStyle=bcolor; ctx.fill();
+  });
+  ctx.restore();
+}
+
+// Telemetry logic
+function updateHardwareUI(d) {
+  // --- RADAR UI ---
+  // Badge
+  const badge = document.getElementById('radarBotBadge');
+  const icon  = document.getElementById('radarBotIcon');
+  const txt   = document.getElementById('radarBotStateText');
+  if (d.bot_moving) {
+    if(badge) badge.className='bot-badge tracking';
+    if(icon) icon.textContent='🤖';
+    if(txt) txt.textContent='TRACKING TARGET';
+  } else {
+    if(badge) badge.className='bot-badge idle';
+    if(icon) icon.textContent='⬛';
+    if(txt) txt.textContent='BOT IDLE';
+  }
+
+  // Target Metrics
+  const presEl = document.getElementById('rdv-presence');
+  if (presEl) {
+    presEl.textContent = d.presence ? 'DETECTED' : 'CLEAR';
+    presEl.className = 'rdv-t-val '+(d.presence?'warn':'ok');
+  }
+
+  const mvEl = document.getElementById('rdv-move-dist');
+  const mvBar = document.getElementById('rdv-move-bar');
+  if (mvEl) {
+    if (d.moving && d.move_dist>0) {
+      mvEl.textContent=`${d.move_dist} cm`; 
+      mvBar.style.width=Math.min(100,d.move_signal)+'%';
+    } else {
+      mvEl.textContent=`--- cm`; 
+      mvBar.style.width='0%';
+    }
+  }
+
+  const stEl = document.getElementById('rdv-stat-dist');
+  const stBar = document.getElementById('rdv-stat-bar');
+  if (stEl) {
+    if (d.stationary && d.stat_dist>0) {
+      stEl.textContent=`${d.stat_dist} cm`; 
+      stBar.style.width=Math.min(100,d.stat_signal)+'%';
+    } else {
+      stEl.textContent=`--- cm`; 
+      stBar.style.width='0%';
+    }
+  }
+
+  // --- MOBILITY HUD & MODAL UI ---
+  // Simulate Motor/ToF if missing from payload
+  const rpm = d.motor_rpm !== undefined ? d.motor_rpm : (d.bot_moving ? Math.floor(60 + Math.random()*20) : 0);
+  const tof = d.tof_distance_mm !== undefined ? d.tof_distance_mm : (d.presence ? (d.moving?d.move_dist*10:d.stat_dist*10) + Math.floor((Math.random()-.5)*20) : 0);
+  const displayMM = Math.max(0, d.total_dist_mm || 0);
+  const displayCM = displayMM / 10;
+  const displayM  = displayMM / 1000;
+  
+  // Update Main HUD
+  const isMoving = rpm > 0 || d.bot_moving;
+  const hudState = document.getElementById('hud-mob-state');
+  if (hudState) {
+    hudState.textContent = isMoving ? 'KINETIC / ADJUSTING VECTOR' : 'STATIC / HOLDING POSITION';
+    hudState.className = 'rs-val ' + (isMoving?'amber':'ok');
+    document.getElementById('hud-mob-rpm').innerHTML = `${rpm} <span style="font-size:10px;color:rgba(255,255,255,.4);">RPM</span>`;
+    document.getElementById('hud-mob-rpm-bar').style.width = Math.min(100, (rpm/150)*100) + '%';
+    document.getElementById('hud-mob-tof').innerHTML = tof>0 ? `${tof} <span style="font-size:10px;color:rgba(255,255,255,.4);">mm</span>` : '--';
+    document.getElementById('hud-mob-tof-bar').style.width = tof>0 ? Math.min(100, (tof/2000)*100) + '%' : '0%';
+    document.getElementById('hud-mob-odo-mm').innerHTML = `${displayMM} <span style="font-size:12px;color:var(--a2);">mm</span>`;
+    document.getElementById('hud-mob-odo-m').textContent = `${displayM.toFixed(3)}`;
+  }
+
+  // Update Modal (Variables that used to be in Radar Modal are now here)
+  const odoBarH = document.getElementById('mob-odo-huge-bar');
+  if (odoBarH) {
+    document.getElementById('mob-rpm-huge').textContent = rpm;
+    const ring = document.getElementById('mob-rpm-ring');
+    ring.style.opacity = isMoving ? '1' : '0';
+    ring.style.transform = `rotate(${Date.now()/5 % 360}deg)`;
+    odoBarH.style.width = Math.min(100,(displayMM/RADAR_ODO_MAX_MM)*100)+'%';
+    document.getElementById('mob-tof-huge').textContent = tof>0 ? `${tof} mm` : '-- mm';
+    document.getElementById('mob-vector').textContent = isMoving ? 'IN MOTION' : 'STATIC';
+    document.getElementById('mob-vector').className = 'rdv-t-val ' + (isMoving?'amber':'ok');
+  }
+
+  // Chart (Historical Arrays)
+  radarHistMove.push(d.moving ? d.move_dist : 0); radarHistMove.shift();
+  radarHistStat.push(d.stationary ? d.stat_dist : 0); radarHistStat.shift();
+  drawRadarHistory();
+
+  // Update Main HUD Chassis Animation
+  const tofCone = document.getElementById('hud-tof-cone');
+  if (tofCone) tofCone.setAttribute('opacity', tof>0 ? (0.4 + Math.sin(Date.now()/100)*0.2) : '0');
+  const tofBeam = document.getElementById('hud-tof-beam');
+  if (tofBeam) tofBeam.setAttribute('stroke', tof>0&&tof<500 ? '#ff3c3c' : (tof>0&&tof<1000 ? '#ffaa00' : 'rgba(0,207,255,0.3)'));
+}
+
+function drawRadarHistory() {
+  const macLine=document.getElementById('mob-chart-move');
+  const micLine=document.getElementById('mob-chart-stat');
+  if(!macLine||!micLine) return;
+  const w=600, h=100;
+  macLine.setAttribute('points', radarHistMove.map((v,i)=>`${(i/(RADAR_HIST_LEN-1))*w},${h-(v/RADAR_MAX_DIST)*h}`).join(' '));
+  micLine.setAttribute('points', radarHistStat.map((v,i)=>`${(i/(RADAR_HIST_LEN-1))*w},${h-(v/RADAR_MAX_DIST)*h}`).join(' '));
+  
+  if(radarLastData && radarLastData.presence) {
+      const xPos=((RADAR_HIST_LEN-1)/(RADAR_HIST_LEN-1))*600;
+      const evG=document.getElementById('mob-chart-events');
+      if(evG){
+        const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+        tri.setAttribute('points',`${xPos},100 ${xPos-3},90 ${xPos+3},90`);
+        tri.setAttribute('fill','var(--a3)'); tri.setAttribute('opacity','0.8');
+        evG.appendChild(tri);
+        if(evG.children.length > 50) evG.removeChild(evG.firstChild);
+      }
+  }
+}
+
+// ════════════════════════════════════════════
+// THE MOBILITY DEEP-DIVE CANVAS ENGINES
+// ════════════════════════════════════════════
+let mobilityAnimFrame = null;
+let mobRpmPhase = 0;
+let tofTunnelPhase = 0;
+
+function mobilityRenderLoop() {
+  mobilityAnimFrame = requestAnimationFrame(mobilityRenderLoop);
+  
+  // Extract latest simulated or real values
+  let rpm = 0;
+  let tof = 0;
+  if(radarLastData) {
+     rpm = radarLastData.motor_rpm !== undefined ? radarLastData.motor_rpm : (radarLastData.bot_moving ? Math.floor(60 + Math.random()*20) : 0);
+     tof = radarLastData.tof_distance_mm !== undefined ? radarLastData.tof_distance_mm : (radarLastData.presence ? ((radarLastData.moving?radarLastData.move_dist*10:radarLastData.stat_dist*10) + Math.floor((Math.random()-.5)*20)) : 0);
+  }
+
+  // 1. Draw Dual Differential RPM Gauge
+  const rpmCanvas = document.getElementById('mobRpmCanvas');
+  if(rpmCanvas) {
+    const ctx = rpmCanvas.getContext('2d');
+    const w = rpmCanvas.width, h = rpmCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+    mobRpmPhase += (rpm/50) + 0.02;
+    
+    const drawGauge = (cx, cy, r, val, label) => {
+      ctx.save(); ctx.translate(cx, cy);
+      // Track BG
+      ctx.beginPath(); ctx.arc(0, 0, r, 0.8*Math.PI, 2.2*Math.PI);
+      ctx.strokeStyle = 'rgba(0,207,255,0.05)'; ctx.lineWidth = 14; ctx.lineCap = 'round'; ctx.stroke();
+      
+      // Active Arc
+      const pct = Math.min(val/200, 1);
+      const endAng = 0.8*Math.PI + pct*(1.4*Math.PI);
+      
+      if(val > 0) {
+        ctx.beginPath(); ctx.arc(0, 0, r, 0.8*Math.PI, endAng);
+        ctx.strokeStyle = pct>0.8 ? '#ff3c3c' : (pct>0.4 ? 'var(--a4)' : 'var(--accent)');
+        ctx.lineWidth = 14; ctx.lineCap = 'round';
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.strokeStyle; ctx.stroke(); ctx.shadowBlur = 0;
+      }
+      
+      // Spinner
+      const spinAng = val > 0 ? mobRpmPhase : 0;
+      ctx.rotate(spinAng);
+      ctx.beginPath();
+      for(let i=0; i<6; i++) {
+        ctx.moveTo(0, r-25); ctx.lineTo(0, r-15); ctx.rotate(Math.PI/3);
+      }
+      ctx.strokeStyle = `rgba(0,207,255,${val>0?0.5:0.1})`; ctx.lineWidth = 4; ctx.stroke();
+      ctx.restore();
+      
+      // Label
+      ctx.fillStyle = val>0 ? 'var(--accent)' : 'rgba(255,255,255,0.4)';
+      ctx.font = '38px var(--fd)'; ctx.textAlign = 'center'; ctx.fillText(Math.floor(val), cx, cy+10);
+      ctx.font = '10px var(--fm)'; ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText(label, cx, cy+45);
+    };
+
+    const diff = rpm > 0 ? Math.sin(mobRpmPhase)*15 : 0; // Fake steering diff
+    drawGauge(110, 140, 85, Math.max(0, rpm + diff), 'LEFT TREAD');
+    drawGauge(340, 140, 85, Math.max(0, rpm - diff), 'RIGHT TREAD');
+  }
+
+  // 2. Draw 3D ToF Collision Tunnel
+  const tofCanvas = document.getElementById('mobTofCanvas');
+  if(tofCanvas) {
+    const ctx = tofCanvas.getContext('2d');
+    const w = tofCanvas.width, h = tofCanvas.height;
+    
+    if (tof > 0 && tof < 300) {
+       ctx.fillStyle = `rgba(255,60,60,${0.05 + Math.sin(Date.now()/50)*0.05})`; ctx.fillRect(0,0,w,h);
+    } else {
+       ctx.clearRect(0,0,w,h);
+    }
+
+    const cx = w/2, cy = h/2 + 20;
+    
+    // Grid Lines
+    ctx.beginPath();
+    for(let i=-6; i<=6; i++) { ctx.moveTo(cx, cy); ctx.lineTo(cx + i*120, h); }
+    ctx.strokeStyle = 'rgba(0,207,255,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+
+    const speed = tof > 0 ? Math.max(1, 1000/tof) : 0;
+    tofTunnelPhase += speed; if(tofTunnelPhase > 20) tofTunnelPhase -= 20;
+
+    ctx.beginPath();
+    for(let i=0; i<15; i++) {
+      const yOffset = Math.pow((i*20 + tofTunnelPhase)/300, 2) * h;
+      if (yOffset > h) continue;
+      ctx.moveTo(0, cy + yOffset); ctx.lineTo(w, cy + yOffset);
+    }
+    ctx.strokeStyle = tof > 0 && tof < 500 ? 'rgba(255,170,0,0.3)' : 'rgba(0,207,255,0.2)';
+    ctx.stroke();
+
+    // The Physical Obstacle Plane
+    if (tof > 0) {
+      const wallZ = Math.min(Math.max(tof/2000, 0.1), 1);
+      const wallH = (1-wallZ) * 160;
+      const wallW = (1-wallZ) * 400;
+      const wx = cx - wallW/2, wy = cy - wallH/2 + (1-wallZ)*40;
+      
+      ctx.fillStyle = tof < 300 ? 'rgba(255,60,60,0.15)' : (tof < 800 ? 'rgba(255,170,0,0.15)' : 'rgba(0,207,255,0.05)');
+      ctx.fillRect(wx, wy, wallW, wallH);
+      ctx.strokeStyle = tof < 300 ? '#ff3c3c' : (tof < 800 ? 'var(--a4)' : 'var(--accent)');
+      ctx.lineWidth = 2; ctx.strokeRect(wx, wy, wallW, wallH);
+      
+      // Target Crosshair
+      ctx.beginPath();
+      ctx.moveTo(wx, cy); ctx.lineTo(wx+wallW, cy);
+      ctx.moveTo(cx, wy); ctx.lineTo(cx, wy+wallH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.stroke();
+    }
+  }
+}
+
+// Mobility Modal Hooks
+function openMobilityDeepDive() { 
+  const modal = document.getElementById('mobility-deep-dive');
+  modal.style.display = 'flex'; 
+  modal.style.position = 'fixed';
+  modal.style.zIndex = '9999';
+  if(!mobilityAnimFrame) mobilityRenderLoop();
+}
+
+function closeMobilityDeepDive() { 
+  document.getElementById('mobility-deep-dive').style.display='none'; 
+  if(mobilityAnimFrame) { cancelAnimationFrame(mobilityAnimFrame); mobilityAnimFrame=null; }
+}
+
+// ════════════════════════════════════════════
+// THE AI NEURAL NETWORK CANVAS ENGINE (YOLOv8s)
+// ════════════════════════════════════════════
+let aiAnimFrame = null;
+let aiPhase = 0;
+let aiFpsHistory = new Array(60).fill(12);
+let aiTensorCount = 0;
+let aiPollTimer = null;
+let aiBackendLive = false;
+let aiLatestConfig = {
+  inference_fps: 12,
+  threat_active: false,
+  confidence: 0,
+  persons_in_frame: 0
+};
+
+async function pollAiTelemetry() {
+  try {
+    const res = await fetch('http://127.0.0.1:5000/status', { signal: AbortSignal.timeout(500) });
+    if(res.ok) {
+       aiLatestConfig = await res.json();
+       aiBackendLive = true;
+       return;
+    }
+  } catch(e) {}
+  aiBackendLive = false;
+}
+
+function aiRenderLoop() {
+  aiAnimFrame = requestAnimationFrame(aiRenderLoop);
+  aiPhase += 1;
+
+  // 1. Core State Definitions from Python Server
+  const pConf = aiLatestConfig.confidence || 0;
+  const vConf = 0.5 + Math.random() * 2; // minor UI baseline noise
+  const tConf = aiLatestConfig.threat_active ? aiLatestConfig.confidence : 0;
+  const currentFps = aiLatestConfig.inference_fps || 8;
+  const isThreat = aiLatestConfig.threat_active;
+
+  // 2. Update Confidence Bars (Threat Matrix)
+  if(aiPhase % 5 === 0) {
+    const pc=document.getElementById('ai-conf-person'), pb=document.getElementById('ai-bar-person');
+    const vc=document.getElementById('ai-conf-veh'), vb=document.getElementById('ai-bar-veh');
+    const tc=document.getElementById('ai-conf-threat'), tb=document.getElementById('ai-bar-threat');
+    if(pc) pc.textContent = pConf.toFixed(1) + '%';
+    if(pb) pb.style.width = pConf + '%';
+    if(vc) vc.textContent = vConf.toFixed(1) + '%';
+    if(vb) vb.style.width = vConf + '%';
+    if(tc) tc.textContent = tConf.toFixed(1) + '%';
+    if(tb) tb.style.width = tConf + '%';
+
+    // Update Main HUD Mini Widget
+    const mBadge = document.getElementById('modal-ai-badge');
+    const mBox = document.getElementById('modal-aim-box');
+    const mIcon = document.getElementById('modal-aim-icon');
+    const mVal = document.getElementById('modal-aim-val');
+
+    if(mBadge) mBadge.innerHTML = `⤢ CLICK TO EXPAND &middot; ${currentFps.toFixed(1)} FPS`;
+    if(isThreat) {
+        if(mBox) mBox.className = 'aim-status detected';
+        if(mIcon) mIcon.textContent = '🔴';
+        if(mVal) { mVal.textContent = 'THREAT DETECTED'; mVal.className = 'aim-val yes'; }
+    } else {
+        if(mBox) mBox.className = 'aim-status clear';
+        if(mIcon) mIcon.textContent = '🟢';
+        if(mVal) { mVal.textContent = 'NO THREAT'; mVal.className = 'aim-val no'; }
+    }
+  }
+
+  // 3. Inference Latency Graph
+  if(aiPhase % 4 === 0) {
+    aiFpsHistory.push(currentFps);
+    aiFpsHistory.shift();
+    
+    const fpsVal = document.getElementById('ai-fps-val');
+    if (fpsVal) fpsVal.textContent = currentFps.toFixed(1) + ' FPS';
+    
+    const fpsCanvas = document.getElementById('aiFpsCanvas');
+    if(fpsCanvas) {
+      const ctx = fpsCanvas.getContext('2d');
+      const w = fpsCanvas.width, h = fpsCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      
+      ctx.beginPath();
+      for(let i=0; i<60; i++) {
+        const x = (i/59)*w;
+        const y = h - (aiFpsHistory[i]/30)*h; // scale 0-30 fps
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = 'rgba(255,170,0,0.8)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // 4. Raw Tensor Datastream Log
+  if(aiPhase % 3 === 0) {
+    const log = document.getElementById('ai-tensor-log');
+    if(log) {
+      aiTensorCount++;
+      const layers = ['conv2d_4', 'batch_norm_3', 'leaky_relu_2', 'max_pool_1', 'yolo_head_out', 'tensor_squeeze', 'anchor_match'];
+      let extra = isThreat ? ` :: [PERSON_DETECTED] CONF=${pConf.toFixed(0)}%` : ` :: SUCCESS / 0ms`;
+      const text = `[TNSR-${aiTensorCount.toString().padStart(5,'0')}] executing ${layers[Math.floor(Math.random()*layers.length)]} > float16_weight.map [${(Math.random()).toFixed(4)}]${extra}`;
+      const div = document.createElement('div');
+      div.textContent = text;
+      if (isThreat) div.style.color = "var(--a3)";
+      log.appendChild(div);
+      if(log.children.length > 11) log.removeChild(log.firstChild);
+    }
+  }
+}
+
+// AI Modal Hooks
+function openAiDeepDive() { 
+  const modal = document.getElementById('ai-deep-dive');
+  modal.style.display = 'flex'; 
+  modal.style.position = 'fixed';
+  modal.style.zIndex = '9999';
+  if(!aiAnimFrame) {
+      aiRenderLoop();
+      aiPollTimer = setInterval(pollAiTelemetry, 500); // 2 FPS watchdog
+      pollAiTelemetry(); // Check immediately
+  }
+}
+
+function closeAiDeepDive() { 
+  document.getElementById('ai-deep-dive').style.display='none'; 
+  if(aiAnimFrame) { cancelAnimationFrame(aiAnimFrame); aiAnimFrame=null; }
+  if(aiPollTimer) { clearInterval(aiPollTimer); aiPollTimer=null; }
+}
+
+async function doRadarPoll() {
+  const ip = document.getElementById('radarIp').value.trim();
+  try {
+    const res = await fetch(`http://${ip}/data`, { signal: AbortSignal.timeout(800) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    radarFailCount = 0;
+    
+    // Update Connection Badge styling
+    document.getElementById('rdv-conn-badge').textContent='● SENSOR CONNECTED';
+    document.getElementById('rdv-conn-badge').style.color='var(--a2)';
+    document.getElementById('rdv-conn-badge').style.borderColor='rgba(0,255,136,0.3)';
+    
+    radarLastData = d;
+    updateHardwareUI(d);
+  } catch(e) {
+    radarFailCount++;
+    if (radarFailCount>=5) {
+      document.getElementById('rdv-conn-badge').textContent='● OFFLINE';
+      document.getElementById('rdv-conn-badge').style.color='rgba(255,255,255,0.4)';
+      document.getElementById('rdv-conn-badge').style.borderColor='transparent';
+    }
+  }
+}
+
+function toggleRadarPolling() {
+  const btn = document.getElementById('radarConnectBtn');
+  if (radarPollTimer) {
+    clearInterval(radarPollTimer); radarPollTimer=null;
+    btn.textContent='CONNECT SENSOR'; btn.classList.remove('stop');
+  } else {
+    const ip = document.getElementById('radarIp').value.trim();
+    if (!ip) return;
+    btn.textContent='DISCONNECT'; btn.classList.add('stop');
+    radarFailCount=0; doRadarPoll();
+    radarPollTimer=setInterval(doRadarPoll, RADAR_POLL_MS);
+  }
+}
 
 /* ════════════════════════════════════════════
    CAMERA TERMINALS — Mode Selector + Full-Screen
@@ -2220,8 +2703,20 @@ function startAiTelemetry(){
 
 // ── ESP-CAM TERMINAL (enhanced) ──
 function connectEspTerminal(){
-  const url=document.getElementById('esp-ct-url').value.trim();
-  if(!url){alert('Enter ESP32-CAM stream URL');return;}
+  let url=document.getElementById('esp-ct-url').value.trim();
+  if(!url){alert('Enter ESP32-CAM stream URL or IP');return;}
+  
+  // Auto-format raw IPs and mDNS to the correct stream endpoint
+  let lowerUrl = url.toLowerCase();
+  
+  if (lowerUrl === 'localhost' || lowerUrl === '127.0.0.1') {
+      url = 'http://127.0.0.1:5000/feed';
+  } else if (!lowerUrl.includes(':81') && !lowerUrl.includes('5000')) {
+      // Clean up if they typed http:// but no port
+      let clean = url.replace('http://', '').replace('https://', '').replace('/', '');
+      url = 'http://' + clean + ':81/stream';
+  }
+
   const img=document.getElementById('esp-ct-img');
   const ph=document.getElementById('esp-ct-placeholder');
   img.src=url;
@@ -2254,3 +2749,4 @@ function disconnectEspTerminal(){
 </script>
 </body>
 </html>
+
