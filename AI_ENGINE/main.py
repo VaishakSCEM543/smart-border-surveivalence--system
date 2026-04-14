@@ -106,6 +106,31 @@ def send_detection_to_firebase(detected: bool, confidence: float = 0):
     status = "THREAT" if detected else "CLEAR"
     logger.info(f"Firebase AI → {status} (conf: {confidence:.2f})")
 
+def push_swarm_telemetry(threat_active: bool):
+    """Dynamically synthesize missing hardware parameters and stream them to cloud."""
+    # ── 1. Simulated Radar Telemetry (HLK-LD2410C) ──
+    macro = random.randint(80, 100) if threat_active else random.randint(0, 10)
+    micro = random.randint(60, 95) if threat_active else random.randint(5, 20)
+    firebase_push("bot1/radar", {
+        "presence": "DETECTED" if threat_active else "CLEAR",
+        "macro_motion": macro,
+        "micro_motion": micro
+    })
+
+    # ── 2. Simulated Kinetics (Motor Odometry) ──
+    firebase_push("bot1/kinematics", {
+        "state": "STATIC / HOLDING POSITION" if threat_active else "PATROL / WANDERING",
+        "rpm": 0 if threat_active else random.randint(12, 18),
+        "odometer_mm": round(time.time() % 10000, 2)  # Increasing odometer
+    })
+
+    # ── 3. Static GPS (College Benchmark) ──
+    firebase_push("bot1/gps", {
+        "lat": 12.9716 + random.uniform(-0.0001, 0.0001),
+        "lng": 77.5946 + random.uniform(-0.0001, 0.0001),
+        "satellites": 8
+    })
+
 
 # ╔══════════════════════════════════════════╗
 # ║  MJPEG RE-STREAM SERVER                  ║
@@ -433,7 +458,7 @@ def main():
             positive_count = sum(detection_history)
             is_stable_detection = positive_count >= SMOOTHING_THRESHOLD
 
-            # Only fire Firebase on STATE CHANGE (not every frame)
+            # Only fire Firebase on STATE CHANGE for AI, but CONSTANT for telemetry
             if is_stable_detection != was_stable_detection:
                 if is_stable_detection:
                     detect_count += 1
@@ -443,6 +468,10 @@ def main():
 
                 send_detection_to_firebase(is_stable_detection, max_confidence)
                 was_stable_detection = is_stable_detection
+
+            # Push live swarm telemetry (Radar/GPS/Motors) every ~1 second (every 8 frames at 8FPS)
+            if frame_count % TARGET_PROCESS_FPS == 0:
+                threading.Thread(target=push_swarm_telemetry, args=(was_stable_detection,), daemon=True).start()
 
             # FPS calculation
             fps = 1 / (current_time - prev_frame_time) if prev_frame_time > 0 else 0
@@ -505,4 +534,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
