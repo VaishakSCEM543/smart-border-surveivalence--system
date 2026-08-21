@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISBCAPD — System Flow Diagrams</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.8.0/dist/mermaid.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #040a10;
+      --card: #0a1420;
+      --border: #0e2a3e;
+      --accent: #00cfff;
+      --green: #00ff88;
+      --red: #ff3c3c;
+      --orange: #ffaa00;
+      --text: #c0dff0;
+      --dim: #3a6a8a;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      padding: 50px 20px 30px;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(ellipse at 50% 80%, rgba(0, 207, 255, 0.04) 0%, transparent 60%);
+    }
+
+    .header h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 8px;
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(0, 207, 255, 0.3);
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 3px;
+    }
+
+    /* ── NAV ── */
+    .nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      background: rgba(4, 10, 16, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      text-decoration: none;
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      transition: all 0.25s;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(0, 207, 255, 0.06);
+      box-shadow: 0 0 12px rgba(0, 207, 255, 0.15);
+    }
+
+    /* ── STEP SECTIONS ── */
+    .step {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 60px 30px;
+      border-bottom: 1px solid rgba(14, 42, 62, 0.4);
+    }
+
+    .step-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      background: rgba(0, 207, 255, 0.07);
+      border: 1px solid rgba(0, 207, 255, 0.2);
+      display: inline-block;
+      padding: 4px 14px;
+      margin-bottom: 14px;
+    }
+
+    .step h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: #e0f4ff;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+
+    .step .subtitle {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 1px;
+      margin-bottom: 30px;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+
+    /* ── DIAGRAM CONTAINER ── */
+    .diagram-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 40px 30px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+
+    .diagram-box .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── KEY POINTS ── */
+    .key-points {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .kp {
+      background: rgba(0, 207, 255, 0.03);
+      border: 1px solid rgba(0, 207, 255, 0.1);
+      padding: 16px 18px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .kp-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .kp-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.6;
+      letter-spacing: 0.5px;
+    }
+
+    .kp-text strong {
+      color: var(--accent);
+    }
+
+    /* ── FULL FLOW ── */
+    .full-flow {
+      background: linear-gradient(135deg, rgba(0, 207, 255, 0.04), rgba(0, 255, 136, 0.02));
+      border: 1px solid rgba(0, 207, 255, 0.2);
+      padding: 40px 30px;
+      margin-top: 20px;
+    }
+
+    /* ── MERMAID THEME OVERRIDES ── */
+    .mermaid svg {
+      max-width: 100% !important;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 40px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 3px;
+    }
+
+    @media (max-width: 700px) {
+      .key-points {
+        grid-template-columns: 1fr;
+      }
+
+      .step {
+        padding: 40px 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>ISBCAPD</h1>
+    <p>SYSTEM ARCHITECTURE FLOW &mdash; COMPLETE DATA PIPELINE</p>
+  </div>
+
+  <div class="nav">
+    <a href="#step1">1. HARDWARE</a>
+    <a href="#step2">2. DATA SPLIT</a>
+    <a href="#step3">3. DASHBOARD</a>
+    <a href="#step4">4. AI ENGINE</a>
+    <a href="#step5">5. FULL FLOW</a>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STEP 1: THE HARDWARE                        -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="step" id="step1">
+    <div class="step-label">STEP 1 OF 5</div>
+    <h2>The Physical Hardware</h2>
+    <p class="subtitle">
+      The ESP32 microcontroller gathers raw physical data from the real world using its attached sensors.
+      It has two separate boards to prevent interference.
+    </p>
+
+    <div class="diagram-box">
+      <div class="mermaid">
+        graph TB
+        subgraph BOT1["🤖 BOT 1 — THE SENTINEL"]
+        direction TB
+        subgraph MCU1["Main ESP32 Dev Board"]
+        RADAR["📡 HLK-LD2410C<br />Millimeter-Wave Radar<br /><i>Detects humans via UART</i>"]
+        GPS["🛰️ GPS6MV2 Module<br /><i>Latitude & Longitude</i>"]
+        ENCODER["⚙️ N20 Motor Encoders<br /><i>Wheel distance tracking</i>"]
+        TOF["🔦 VL53L0X Laser<br /><i>Time-of-Flight distance</i>"]
+        SERVO["🔄 Servo Motor<br /><i>180° radar sweep</i>"]
+        end
+        subgraph MCU2["ESP32-CAM Board"]
+        CAM["📷 OV2640 Camera<br /><i>Live MJPEG video stream</i>"]
+        end
+        end
+
+        subgraph BOT2["🤖 BOT 2 — THE MAPPER"]
+        ULTRA["📏 HC-SR04 Ultrasonic<br /><i>Obstacle distance</i>"]
+        OLED["🖥️ 0.96 inch OLED Display<br /><i>Shows direction arrows</i>"]
+        SERVO2["🔄 Scanning Servo<br /><i>Left-Right obstacle check</i>"]
+        end
+
+        style BOT1 fill:#0a1e2e,stroke:#00cfff,stroke-width:2px,color:#e0f4ff
+        style BOT2 fill:#0a1e2e,stroke:#ffaa00,stroke-width:2px,color:#e0f4ff
+        style MCU1 fill:#061420,stroke:#0e2a3e,color:#b0d0e0
+        style MCU2 fill:#061420,stroke:#0e2a3e,color:#b0d0e0
+      </div>
+    </div>
+
+    <div class="key-points">
+      <div class="kp">
+        <div class="kp-icon">🧠</div>
+        <div class="kp-text"><strong>Why 2 separate ESP32 boards?</strong><br />The camera uses heavy DMA buffers. If
+          motors and camera share one chip, the motor interrupts crash the camera buffer.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">📡</div>
+        <div class="kp-text"><strong>What does the Radar detect?</strong><br />The HLK-LD2410C sends 24GHz microwaves.
+          It can detect a person breathing from 6 meters away, even through walls.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">🛰️</div>
+        <div class="kp-text"><strong>What does GPS give us?</strong><br />Two numbers: Latitude and Longitude. These are
+          the exact coordinates we push to Firebase so the map on the dashboard updates.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">📏</div>
+        <div class="kp-text"><strong>Bot 2's Dead Reckoning:</strong><br />Bot 2 has no GPS or encoders. It estimates
+          its position using motor runtime &times; speed. This is called Dead Reckoning.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STEP 2: THE DATA SPLIT                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="step" id="step2">
+    <div class="step-label">STEP 2 OF 5</div>
+    <h2>The Two Data Paths</h2>
+    <p class="subtitle">
+      Video is heavy. Numbers are light. We split them into two separate highways
+      to maximize speed and prevent bottlenecks.
+    </p>
+
+    <div class="diagram-box">
+      <div class="mermaid">
+        graph LR
+        ESP32["🤖 ESP32<br />Main Board"]
+        ESPCAM["📷 ESP32-CAM"]
+
+        subgraph PATH_A["🔴 PATH A: HEAVY VIDEO (Local Network)"]
+        direction LR
+        STREAM["MJPEG Stream<br /><i>Over Wi-Fi port :81</i>"]
+        LAPTOP["💻 Your Laptop<br /><i>Python + OpenCV</i>"]
+        YOLO["🧠 YOLOv8s<br /><i>AI Detection</i>"]
+        end
+
+        subgraph PATH_B["🟢 PATH B: LIGHT NUMBERS (Cloud)"]
+        direction LR
+        JSON["JSON Payload<br /><i>lat, lng, radar, speed</i>"]
+        FIREBASE["☁️ Google Firebase<br /><i>Realtime Database</i>"]
+        end
+
+        ESPCAM -->|"Video frames"| STREAM --> LAPTOP --> YOLO
+        ESP32 -->|"Tiny numbers"| JSON --> FIREBASE
+
+        style PATH_A fill:#1a0a0a,stroke:#ff3c3c,stroke-width:2px,color:#ffcccc
+        style PATH_B fill:#0a1a0a,stroke:#00ff88,stroke-width:2px,color:#ccffdd
+      </div>
+    </div>
+
+    <div class="key-points">
+      <div class="kp">
+        <div class="kp-icon">🔴</div>
+        <div class="kp-text"><strong>Why is Video kept Local?</strong><br />A video frame is ~50KB. Uploading that to
+          Firebase 15 times per second = 750KB/s. Firebase would crash and lag by 10 seconds.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">🟢</div>
+        <div class="kp-text"><strong>Why are Numbers sent to Cloud?</strong><br />GPS is just 2 numbers (14.23, 72.84) =
+          about 40 bytes. That's nearly invisible to Firebase and arrives in under 300ms globally.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STEP 3: THE DASHBOARD                       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="step" id="step3">
+    <div class="step-label">STEP 3 OF 5</div>
+    <h2>The Command Dashboard</h2>
+    <p class="subtitle">
+      The Dashboard is a custom-built HTML/CSS/JavaScript web application.
+      It pulls data from both paths and paints it onto a stunning military-grade UI.
+    </p>
+
+    <div class="diagram-box">
+      <div class="mermaid">
+        graph TB
+        subgraph DASH["🖥️ COMMAND DASHBOARD (Browser)"]
+        direction TB
+        ARM1["Arm 1: Fetch Video<br /><i>Connects to Python AI server</i><br /><i>http://127.0.0.1:5000/feed</i>"]
+        ARM2["Arm 2: Listen to Firebase<br /><i>WebSocket auto-sync</i><br /><i>No manual refresh needed</i>"]
+
+        subgraph UI["Glassmorphism UI Panels"]
+        MAP["🗺️ Live GPS Map<br /><i>Leaflet.js + OpenStreetMap</i>"]
+        RADARVIZ["📡 Radar Sweep Canvas<br /><i>HTML5 Canvas animation</i>"]
+        CAMVIEW["📷 AI Camera Feed<br /><i>Live bounding boxes</i>"]
+        THREAT["⚠️ Threat Status Panel<br /><i>CLEAR / CAUTION / THREAT</i>"]
+        end
+        end
+
+        PYTHON["💻 Python AI Server<br /><i>localhost:5000</i>"] -->|"Processed video"| ARM1
+        FB["☁️ Firebase RTDB"] -->|"GPS + Radar JSON"| ARM2
+        ARM1 --> CAMVIEW
+        ARM2 --> MAP
+        ARM2 --> RADARVIZ
+        ARM2 --> THREAT
+
+        style DASH fill:#0a1420,stroke:#00cfff,stroke-width:2px,color:#e0f4ff
+        style UI fill:#061018,stroke:#0e2a3e,color:#b0d0e0
+      </div>
+    </div>
+
+    <div class="key-points">
+      <div class="kp">
+        <div class="kp-icon">⚡</div>
+        <div class="kp-text"><strong>What are WebSockets?</strong><br />Normal websites ask the server "Any updates?"
+          every few seconds. With WebSockets, Firebase instantly PUSHES updates to the browser the millisecond data
+          changes. Zero delay.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">🎨</div>
+        <div class="kp-text"><strong>What is Glassmorphism?</strong><br />A modern UI design language using
+          frosted-glass panels, neon borders, and dark backgrounds. Used by Apple, Tesla, and military dashboards for
+          clarity under stress.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STEP 4: THE AI ENGINE                       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="step" id="step4">
+    <div class="step-label">STEP 4 OF 5</div>
+    <h2>The AI Neural Engine</h2>
+    <p class="subtitle">
+      The Python backend receives the raw camera stream, runs a YOLOv8s Neural Network
+      on every frame, and classifies threats in real-time.
+    </p>
+
+    <div class="diagram-box">
+      <div class="mermaid">
+        graph LR
+        CAM["📷 ESP32-CAM<br /><i>Raw MJPEG</i>"]
+
+        subgraph PYTHON["💻 Python AI Engine (main.py)"]
+        direction TB
+        GRAB["🎞️ Frame Grabber<br /><i>Thread 1: Producer</i><br /><i>cv2.VideoCapture()</i>"]
+        QUEUE["📦 Frame Queue<br /><i>collections.deque</i><br /><i>maxlen=2</i>"]
+        DETECT["🧠 YOLO Detector<br /><i>Thread 2: Consumer</i><br /><i>model.predict()</i>"]
+        FLASK["🌐 Flask Server<br /><i>Re-streams processed video</i><br /><i>on port 5000</i>"]
+        end
+
+        RESULT["📊 Output"]
+
+        CAM -->|"Wi-Fi stream"| GRAB
+        GRAB -->|"Raw frames"| QUEUE
+        QUEUE -->|"Latest frame"| DETECT
+        DETECT -->|"Annotated frames"| FLASK
+        FLASK -->|"/feed endpoint"| RESULT
+
+        style PYTHON fill:#1a1a0a,stroke:#ffaa00,stroke-width:2px,color:#ffeedd
+      </div>
+    </div>
+
+    <div class="key-points">
+      <div class="kp">
+        <div class="kp-icon">🔄</div>
+        <div class="kp-text"><strong>Producer-Consumer Pattern:</strong><br />Thread 1 grabs frames as fast as possible.
+          Thread 2 processes AI on the latest frame only. Old frames are thrown away to prevent lag buildup.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">🧠</div>
+        <div class="kp-text"><strong>What is YOLOv8s?</strong><br />YOLO = "You Only Look Once." It scans the entire
+          image in a single pass to find objects. The 's' means 'small' model — optimized for speed while keeping
+          accuracy above 80%.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">📦</div>
+        <div class="kp-text"><strong>Why deque(maxlen=2)?</strong><br />If the AI takes 80ms per frame but camera sends
+          at 30fps, frames pile up. The deque automatically drops old frames so the AI always processes the FRESHEST
+          image, not a 3-second-old one.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">🌐</div>
+        <div class="kp-text"><strong>Why Flask re-streaming?</strong><br />After YOLO draws bounding boxes on each
+          frame, Flask serves the annotated video as a new MJPEG stream. The dashboard just points an &lt;img&gt; tag at
+          it.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STEP 5: FULL END-TO-END FLOW                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="step" id="step5">
+    <div class="step-label">STEP 5 OF 5</div>
+    <h2>Complete End-to-End Flow</h2>
+    <p class="subtitle">
+      This is the master diagram. Follow the arrows from the physical world
+      all the way to the operator's screen.
+    </p>
+
+    <div class="full-flow">
+      <div class="mermaid">
+        graph TB
+        subgraph PHYSICAL["🌍 PHYSICAL WORLD"]
+        HUMAN["👤 Human / Threat"]
+        GROUND["🌿 Terrain"]
+        end
+
+        subgraph HARDWARE["🤖 ROBOT HARDWARE"]
+        direction LR
+        BOT1_SENSORS["Bot 1 Sensors<br />Radar + GPS + ToF + Encoders"]
+        BOT1_CAM["ESP32-CAM<br />OV2640 Camera"]
+        BOT2_SENSORS["Bot 2 Sensors<br />Ultrasonic + Servo"]
+        end
+
+        subgraph NETWORK["📡 NETWORK LAYER"]
+        direction LR
+        UDP["UDP Packets<br /><i>Bot1 → Bot2 Mesh</i>"]
+        WIFI_VID["Wi-Fi Video<br /><i>MJPEG on port :81</i>"]
+        HTTPS["HTTPS/JSON<br /><i>ESP32 → Firebase</i>"]
+        end
+
+        subgraph CLOUD["☁️ GOOGLE FIREBASE"]
+        RTDB["Realtime Database<br /><i>bot1/gps, bot1/radar</i>"]
+        end
+
+        subgraph BASE_STATION["💻 BASE STATION (Your Laptop)"]
+        direction TB
+        AI["🧠 Python + YOLOv8s<br /><i>Threat Detection AI</i>"]
+        DASHBOARD["🖥️ Command Dashboard<br /><i>Glassmorphism C4ISR UI</i>"]
+        end
+
+        subgraph OPERATOR["👨‍✈️ OPERATOR"]
+        SCREEN["Sees: Map + Radar + AI Video + Threat Alerts"]
+        end
+
+        HUMAN -->|"Detected by"| BOT1_SENSORS
+        GROUND -->|"Navigated by"| BOT2_SENSORS
+        HUMAN -->|"Filmed by"| BOT1_CAM
+
+        BOT1_SENSORS -->|"Sensor data"| UDP
+        BOT1_SENSORS -->|"GPS + Radar"| HTTPS
+        BOT1_CAM -->|"Video frames"| WIFI_VID
+        BOT2_SENSORS -->|"Local /data API"| BASE_STATION
+
+        UDP -->|"Mesh network"| BOT2_SENSORS
+        HTTPS --> RTDB
+        WIFI_VID --> AI
+        RTDB -->|"WebSocket push"| DASHBOARD
+        AI -->|"Processed feed"| DASHBOARD
+        DASHBOARD --> SCREEN
+
+        style PHYSICAL fill:#1a1a0a,stroke:#ffaa00,stroke-width:2px,color:#ffeedd
+        style HARDWARE fill:#0a1e2e,stroke:#00cfff,stroke-width:2px,color:#e0f4ff
+        style NETWORK fill:#0a0a1e,stroke:#bf00ff,stroke-width:2px,color:#e0ccff
+        style CLOUD fill:#0a1a0a,stroke:#00ff88,stroke-width:2px,color:#ccffdd
+        style BASE_STATION fill:#1a1a0a,stroke:#ffaa00,stroke-width:2px,color:#ffeedd
+        style OPERATOR fill:#1a0a1a,stroke:#ff3c3c,stroke-width:2px,color:#ffcccc
+      </div>
+    </div>
+
+    <div class="key-points" style="margin-top:24px;">
+      <div class="kp">
+        <div class="kp-icon">🏆</div>
+        <div class="kp-text"><strong>The Key Takeaway:</strong><br />Physical sensors → Split into Video (local) &
+          Numbers (cloud) → AI processes video → Dashboard merges everything → Operator sees one unified screen.</div>
+      </div>
+      <div class="kp">
+        <div class="kp-icon">🛡️</div>
+        <div class="kp-text"><strong>Defense Architecture:</strong><br />If internet fails, Bot 2 still maps locally. If
+          camera fails, radar still tracks. If laptop fails, Firebase still stores data. Every layer has a fallback.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    ISBCAPD &mdash; INTELLIGENT SWARM-BASED C4ISR & PERIMETER DEFENSE &mdash; 2026
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#0a1e2e',
+        primaryTextColor: '#e0f4ff',
+        primaryBorderColor: '#00cfff',
+        lineColor: '#00cfff',
+        secondaryColor: '#0a1420',
+        tertiaryColor: '#061018',
+        fontFamily: 'Rajdhani, sans-serif',
+        fontSize: '13px',
+        nodeBorder: '#00cfff',
+        clusterBkg: '#0a1420',
+        clusterBorder: '#0e2a3e',
+        edgeLabelBackground: '#0a1420'
+      },
+      flowchart: {
+        curve: 'basis',
+        padding: 20,
+        nodeSpacing: 40,
+        rankSpacing: 50,
+        htmlLabels: true,
+        useMaxWidth: true
+      }
+    });
+  </script>
+
+</body>
+
+</html>
