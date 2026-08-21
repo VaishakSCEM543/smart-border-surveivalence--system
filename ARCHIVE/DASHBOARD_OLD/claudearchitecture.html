@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL — System Architecture Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#040c12; --panel:#070f17; --panel2:#0a141e;
+  --border:#0c1e2e; --border2:#163248; --border3:#1e4a6a;
+  --accent:#00cfff; --a2:#00ff88; --a3:#ff3c3c; --a4:#ffaa00; --a5:#bf00ff;
+  --text:#b8dff0; --tdim:#3a6a8a; --tbright:#e0f4ff;
+  --glow:0 0 18px rgba(0,207,255,.5);
+  --glow2:0 0 18px rgba(0,255,136,.5);
+  --glow3:0 0 18px rgba(255,60,60,.5);
+  --fm:'Share Tech Mono',monospace;
+  --fd:'Orbitron',monospace;
+  --fu:'Rajdhani',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--fu);min-height:100vh;overflow-x:hidden;}
+
+/* SCANLINES */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0,rgba(0,0,0,.03) 1px,transparent 1px,transparent 3px);pointer-events:none;z-index:9999;}
+
+/* GRID BG */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,207,255,.012) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,207,255,.012) 40px);pointer-events:none;z-index:0;}
+
+/* ══ HEADER ══ */
+.site-header{position:sticky;top:0;z-index:500;background:rgba(4,12,18,.97);border-bottom:1px solid var(--border2);backdrop-filter:blur(12px);padding:0 40px;height:64px;display:flex;align-items:center;gap:24px;}
+.site-logo{font-family:var(--fd);font-size:20px;font-weight:900;color:var(--accent);letter-spacing:6px;text-shadow:var(--glow);}
+.site-sub{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:3px;}
+.site-sep{color:var(--border3);font-size:20px;}
+.header-nav{display:flex;gap:6px;margin-left:auto;}
+.hnav-btn{background:transparent;border:1px solid var(--border2);color:var(--tdim);font-family:var(--fm);font-size:9px;padding:6px 14px;cursor:pointer;letter-spacing:2px;transition:all .2s;clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);}
+.hnav-btn:hover,.hnav-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,207,255,.06);}
+
+/* ══ HERO ══ */
+.hero{position:relative;padding:80px 40px 60px;text-align:center;overflow:hidden;}
+.hero-rings{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.hero-ring{position:absolute;border-radius:50%;border:1px solid;transform:translate(-50%,-50%);left:0;top:0;animation:rpulse 4s ease-in-out infinite;}
+.hero-ring:nth-child(1){width:300px;height:300px;border-color:rgba(0,207,255,.08);animation-delay:0s;}
+.hero-ring:nth-child(2){width:600px;height:600px;border-color:rgba(0,207,255,.04);animation-delay:.8s;}
+.hero-ring:nth-child(3){width:900px;height:900px;border-color:rgba(0,207,255,.02);animation-delay:1.6s;}
+@keyframes rpulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1;}50%{transform:translate(-50%,-50%) scale(1.04);opacity:.5;}}
+.hero-label{font-family:var(--fm);font-size:10px;color:var(--tdim);letter-spacing:5px;margin-bottom:16px;position:relative;}
+.hero-title{font-family:var(--fd);font-size:clamp(22px,4vw,42px);font-weight:900;color:var(--tbright);letter-spacing:4px;line-height:1.2;position:relative;margin-bottom:12px;}
+.hero-title span{color:var(--accent);text-shadow:var(--glow);}
+.hero-desc{font-family:var(--fu);font-size:16px;color:var(--tdim);max-width:700px;margin:0 auto 40px;line-height:1.7;position:relative;}
+.hero-pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;position:relative;}
+.hero-pill{font-family:var(--fm);font-size:9px;padding:6px 16px;border:1px solid;letter-spacing:2px;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);}
+.hero-pill.c{border-color:rgba(0,207,255,.3);color:var(--accent);}
+.hero-pill.g{border-color:rgba(0,255,136,.3);color:var(--a2);}
+.hero-pill.a{border-color:rgba(255,170,0,.3);color:var(--a4);}
+
+/* ══ SECTIONS NAV ══ */
+.sections-nav{display:flex;gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:400;}
+.snav-item{flex:1;padding:14px 10px;background:var(--panel);text-align:center;cursor:pointer;transition:all .2s;position:relative;border:none;}
+.snav-item::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);transform:scaleX(0);transition:transform .2s;}
+.snav-item:hover,.snav-item.active{background:var(--panel2);}
+.snav-item.active::before{transform:scaleX(1);}
+.snav-num{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;display:block;margin-bottom:3px;}
+.snav-label{font-family:var(--fd);font-size:9px;color:var(--text);letter-spacing:2px;}
+.snav-item.active .snav-label,.snav-item:hover .snav-label{color:var(--accent);}
+
+/* ══ MAIN CONTENT ══ */
+.content{position:relative;z-index:1;}
+.section{padding:60px 40px;border-bottom:1px solid var(--border);}
+.section-header{margin-bottom:48px;}
+.section-tag{font-family:var(--fm);font-size:9px;color:var(--accent);letter-spacing:4px;margin-bottom:10px;}
+.section-title{font-family:var(--fd);font-size:clamp(18px,3vw,28px);font-weight:700;color:var(--tbright);letter-spacing:3px;margin-bottom:12px;}
+.section-desc{font-family:var(--fu);font-size:15px;color:var(--tdim);max-width:800px;line-height:1.8;}
+
+/* ══ OVERVIEW BLOCK DIAGRAM ══ */
+.overview-diagram{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:0;margin:40px 0;overflow-x:auto;}
+.layer-block{padding:24px 20px;border:1px solid;text-align:center;position:relative;clip-path:polygon(12px 0%,100% 0%,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);transition:all .3s;}
+.layer-block:hover{transform:translateY(-4px);}
+.lb-icon{font-size:32px;margin-bottom:12px;display:block;}
+.lb-tag{font-family:var(--fm);font-size:8px;letter-spacing:3px;margin-bottom:6px;display:block;}
+.lb-title{font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:8px;display:block;}
+.lb-items{font-family:var(--fm);font-size:9px;color:var(--tdim);line-height:1.8;text-align:left;}
+.lb-items li{list-style:none;padding:2px 0;}
+.lb-items li::before{content:'▸ ';color:var(--accent);}
+
+.lb-edge{border-color:rgba(0,207,255,.4);background:rgba(0,207,255,.04);}
+.lb-edge .lb-tag{color:var(--accent);}
+.lb-edge .lb-title{color:var(--accent);text-shadow:var(--glow);}
+
+.lb-ai{border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.04);}
+.lb-ai .lb-tag{color:var(--a2);}
+.lb-ai .lb-title{color:var(--a2);text-shadow:var(--glow2);}
+
+.lb-cloud{border-color:rgba(191,0,255,.4);background:rgba(191,0,255,.04);}
+.lb-cloud .lb-tag{color:var(--a5);}
+.lb-cloud .lb-title{color:var(--a5);text-shadow:0 0 14px rgba(191,0,255,.5);}
+
+.lb-dash{border-color:rgba(255,170,0,.4);background:rgba(255,170,0,.04);}
+.lb-dash .lb-tag{color:var(--a4);}
+.lb-dash .lb-title{color:var(--a4);text-shadow:0 0 14px rgba(255,170,0,.5);}
+
+.flow-arrow{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 8px;}
+.flow-arrow svg{flex-shrink:0;}
+.flow-label{font-family:var(--fm);font-size:8px;color:var(--tdim);letter-spacing:1px;text-align:center;white-space:nowrap;}
+
+/* ══ DETAIL CARDS GRID ══ */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:32px;}
+.detail-card{padding:24px;border:1px solid var(--border2);background:var(--panel);clip-path:polygon(10px 0%,100% 0%,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);transition:all .25s;cursor:default;}
+.detail-card:hover{border-color:var(--border3);background:var(--panel2);transform:translateY(-2px);}
+.dc-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.dc-icon{font-size:24px;}
+.dc-title{font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--tbright);}
+.dc-sub{font-family:var(--fm);font-size:9px;color:var(--tdim);margin-top:2px;}
+.dc-rows{display:flex;flex-direction:column;gap:8px;}
+.dc-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:6px 0;border-bottom:1px solid rgba(12,30,46,.5);font-family:var(--fm);font-size:10px;}
+.dc-row:last-child{border-bottom:none;}
+.dc-key{color:var(--tdim);flex-shrink:0;}
+.dc-val{color:var(--text);text-align:right;}
+.dc-val.hi{color:var(--accent);}
+.dc-val.ok{color:var(--a2);}
+.dc-val.warn{color:var(--a4);}
+.dc-val.err{color:var(--a3);}
+
+/* ══ PIPELINE FLOW ══ */
+.pipeline{display:flex;flex-direction:column;gap:2px;margin:32px 0;}
+.pipe-step{display:grid;grid-template-columns:48px 1fr auto;align-items:stretch;gap:0;position:relative;}
+.pipe-num{font-family:var(--fd);font-size:11px;font-weight:900;color:var(--accent);background:rgba(0,207,255,.08);border:1px solid rgba(0,207,255,.2);display:flex;align-items:center;justify-content:center;padding:16px 0;clip-path:polygon(6px 0%,100% 0%,100% 100%,0 100%,0 6px);}
+.pipe-body{padding:16px 20px;background:var(--panel);border:1px solid var(--border2);border-left:none;flex:1;}
+.pipe-title{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--tbright);margin-bottom:6px;}
+.pipe-desc{font-family:var(--fu);font-size:13px;color:var(--tdim);line-height:1.6;}
+.pipe-code{font-family:var(--fm);font-size:10px;color:var(--accent);background:rgba(0,207,255,.06);padding:2px 8px;border-radius:2px;margin-top:6px;display:inline-block;}
+.pipe-tag{padding:16px 14px;background:var(--panel);border:1px solid var(--border2);border-left:none;display:flex;align-items:center;clip-path:polygon(0 0%,calc(100% - 8px) 0%,100% 8px,100% 100%,0 100%);}
+.pipe-tag span{font-family:var(--fm);font-size:8px;letter-spacing:2px;white-space:nowrap;}
+.pipe-tag.ok span{color:var(--a2);}
+.pipe-tag.hi span{color:var(--accent);}
+.pipe-tag.warn span{color:var(--a4);}
+.pipe-connector{width:2px;background:var(--border2);margin:0 auto;height:2px;position:relative;}
+.pipe-connector::after{content:'▼';position:absolute;left:50%;transform:translateX(-50%);color:var(--tdim);font-size:10px;top:0;}
+
+/* ══ SWARM DIAGRAM ══ */
+.swarm-diagram{margin:32px 0;padding:40px;background:var(--panel);border:1px solid var(--border2);position:relative;overflow:hidden;}
+.swarm-diagram::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,207,255,.04) 0%,transparent 70%);pointer-events:none;}
+.swarm-center{text-align:center;margin-bottom:40px;position:relative;}
+.swarm-hub{display:inline-block;padding:20px 32px;border:2px solid var(--a5);background:rgba(191,0,255,.08);clip-path:polygon(14px 0%,100% 0%,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);box-shadow:0 0 30px rgba(191,0,255,.15);}
+.swarm-hub-title{font-family:var(--fd);font-size:14px;font-weight:900;letter-spacing:4px;color:var(--a5);text-shadow:0 0 14px rgba(191,0,255,.5);}
+.swarm-hub-sub{font-family:var(--fm);font-size:10px;color:var(--tdim);letter-spacing:2px;margin-top:4px;}
+.swarm-bots{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.swarm-bot{padding:16px 12px;border:1px solid;text-align:center;clip-path:polygon(8px 0%,100% 0%,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:all .25s;}
+.swarm-bot:hover{transform:translateY(-3px);}
+.sb-id{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:6px;}
+.sb-role{font-family:var(--fm);font-size:8px;color:var(--tdim);letter-spacing:1px;margin-bottom:8px;}
+.sb-status{font-family:var(--fm);font-size:8px;padding:2px 8px;border-radius:1px;display:inline-block;}
+.swarm-bot.live{border-color:rgba(0,207,255,.4);background:rgba(0,207,255,.05);}
+.swarm-bot.live .sb-id{color:var(--accent);}
+.swarm-bot.live .sb-status{color:var(--accent);border:1px solid rgba(0,207,255,.3);}
+.swarm-bot.online{border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.03);}
+.swarm-bot.online .sb-id{color:var(--a2);}
+.swarm-bot.online .sb-status{color:var(--a2);border:1px solid rgba(0,255,136,.2);}
+.swarm-bot.alert{border-color:rgba(255,60,60,.35);background:rgba(255,60,60,.05);animation:alert-pulse 2s infinite;}
+.swarm-bot.alert .sb-id{color:var(--a3);}
+.swarm-bot.alert .sb-status{color:var(--a3);border:1px solid rgba(255,60,60,.3);}
+.swarm-bot.standby{border-color:rgba(255,170,0,.2);background:rgba(255,170,0,.03);}
+.swarm-bot.standby .sb-id{color:var(--a4);}
+.swarm-bot.standby .sb-status{color:var(--a4);border:1px solid rgba(255,170,0,.2);}
+.swarm-bot.offline{border-color:rgba(58,106,138,.2);background:rgba(0,0,0,.2);opacity:.6;}
+.swarm-bot.offline .sb-id{color:var(--tdim);}
+.swarm-bot.offline .sb-status{color:var(--tdim);border:1px solid var(--border);}
+@keyframes alert-pulse{0%,100%{box-shadow:none;}50%{box-shadow:0 0 16px rgba(255,60,60,.2);}}
+
+/* ══ CODE BLOCK ══ */
+.code-block{background:rgba(0,0,0,.5);border:1px solid var(--border2);border-left:3px solid var(--accent);padding:20px 24px;margin:16px 0;overflow-x:auto;}
+.code-block pre{font-family:var(--fm);font-size:11px;color:var(--text);line-height:1.8;white-space:pre-wrap;}
+.code-label{font-family:var(--fm);font-size:8px;color:var(--tdim);letter-spacing:3px;margin-bottom:10px;}
+.kw{color:var(--accent);}
+.str{color:var(--a2);}
+.num{color:var(--a4);}
+.cm{color:var(--tdim);}
+
+/* ══ FIREBASE SCHEMA ══ */
+.schema-tree{font-family:var(--fm);font-size:12px;line-height:2;padding:24px;background:rgba(0,0,0,.4);border:1px solid var(--border2);}
+.st-root{color:var(--a5);}
+.st-node{color:var(--accent);}
+.st-leaf{color:var(--a2);}
+.st-val{color:var(--a4);}
+.st-dim{color:var(--tdim);}
+.st-indent{padding-left:24px;display:block;}
+
+/* ══ COMPARISON TABLE ══ */
+.comp-table{width:100%;border-collapse:collapse;margin:24px 0;}
+.comp-table th{font-family:var(--fd);font-size:9px;letter-spacing:2px;color:var(--accent);padding:12px 16px;border-bottom:2px solid var(--border3);text-align:left;background:var(--panel2);}
+.comp-table td{font-family:var(--fm);font-size:10px;padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);}
+.comp-table tr:hover td{background:rgba(0,207,255,.03);}
+.badge{display:inline-block;padding:2px 8px;border-radius:1px;font-size:9px;}
+.badge.ok{background:rgba(0,255,136,.1);color:var(--a2);border:1px solid rgba(0,255,136,.2);}
+.badge.warn{background:rgba(255,170,0,.1);color:var(--a4);border:1px solid rgba(255,170,0,.2);}
+.badge.err{background:rgba(255,60,60,.1);color:var(--a3);border:1px solid rgba(255,60,60,.2);}
+.badge.hi{background:rgba(0,207,255,.1);color:var(--accent);border:1px solid rgba(0,207,255,.2);}
+
+/* ══ HIGHLIGHT BOX ══ */
+.highlight-box{padding:20px 24px;margin:20px 0;border-left:3px solid;position:relative;}
+.highlight-box::before{content:'';position:absolute;inset:0;opacity:.05;}
+.hb-cyan{border-color:var(--accent);}
+.hb-cyan::before{background:var(--accent);}
+.hb-green{border-color:var(--a2);}
+.hb-green::before{background:var(--a2);}
+.hb-amber{border-color:var(--a4);}
+.hb-amber::before{background:var(--a4);}
+.hb-red{border-color:var(--a3);}
+.hb-red::before{background:var(--a3);}
+.hb-title{font-family:var(--fd);font-size:10px;letter-spacing:3px;margin-bottom:8px;}
+.hb-cyan .hb-title{color:var(--accent);}
+.hb-green .hb-title{color:var(--a2);}
+.hb-amber .hb-title{color:var(--a4);}
+.hb-red .hb-title{color:var(--a3);}
+.hb-text{font-family:var(--fu);font-size:14px;color:var(--text);line-height:1.7;}
+
+/* ══ TWO-COL ══ */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}.overview-diagram{grid-template-columns:1fr;}.swarm-bots{grid-template-columns:repeat(2,1fr);}}
+
+/* ══ SECTION DIVIDER ══ */
+.s-divider{display:flex;align-items:center;gap:16px;margin:0 40px;padding:16px 0;border-bottom:1px solid var(--border);}
+.s-divider-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border3),transparent);}
+.s-divider-text{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:3px;}
+
+/* ══ FOOTER ══ */
+.site-footer{padding:40px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:gap;gap:16px;}
+.footer-brand{font-family:var(--fd);font-size:14px;color:var(--accent);letter-spacing:4px;}
+.footer-meta{font-family:var(--fm);font-size:9px;color:var(--tdim);letter-spacing:2px;}
+
+/* ══ SCROLL INDICATOR ══ */
+.scroll-progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--a2));z-index:9998;transition:width .1s;}
+
+/* ══ BLINK ══ */
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.blink{animation:blink 2s infinite;}
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scroll-prog"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="site-header">
+  <div class="site-logo">SENTINEL</div>
+  <div class="site-sep">|</div>
+  <div class="site-sub">SYSTEM ARCHITECTURE EXPLORER v3.0</div>
+  <nav class="header-nav">
+    <button class="hnav-btn" onclick="scrollTo('overview')">OVERVIEW</button>
+    <button class="hnav-btn" onclick="scrollTo('hardware')">HARDWARE</button>
+    <button class="hnav-btn" onclick="scrollTo('ai')">AI ENGINE</button>
+    <button class="hnav-btn" onclick="scrollTo('cloud')">CLOUD</button>
+    <button class="hnav-btn" onclick="scrollTo('dashboard')">DASHBOARD</button>
+    <button class="hnav-btn" onclick="scrollTo('swarm')">SWARM</button>
+    <button class="hnav-btn" onclick="scrollTo('flow')">DATA FLOW</button>
+  </nav>
+</header>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-rings">
+    <div class="hero-ring"></div>
+    <div class="hero-ring"></div>
+    <div class="hero-ring"></div>
+  </div>
+  <div class="hero-label">ISBCAPD — INTELLIGENT SWARM-BASED BOTS FOR CONTINUOUS AREA PATROLLING AND DETECTION</div>
+  <h1 class="hero-title">Complete System<br><span>Architecture</span> Reference</h1>
+  <p class="hero-desc">A distributed autonomous surveillance framework combining edge AI, mmWave radar, real-time cloud telemetry, and a C4ISR-grade command dashboard. Built for IEEE publication and live hardware demonstration.</p>
+  <div class="hero-pills">
+    <span class="hero-pill c">ESP32-CAM EDGE NODE</span>
+    <span class="hero-pill g">YOLOv8s ONNX INFERENCE</span>
+    <span class="hero-pill c">FIREBASE RTDB</span>
+    <span class="hero-pill a">SENTINEL DASHBOARD</span>
+    <span class="hero-pill g">PRODUCER-CONSUMER THREADING</span>
+    <span class="hero-pill c">mDNS ZERO-TOUCH NETWORKING</span>
+  </div>
+</section>
+
+<!-- ══ SECTIONS NAV ══ -->
+<nav class="sections-nav" id="sections-nav">
+  <div class="snav-item active" onclick="scrollTo('overview')"><span class="snav-num">01</span><span class="snav-label">OVERVIEW</span></div>
+  <div class="snav-item" onclick="scrollTo('hardware')"><span class="snav-num">02</span><span class="snav-label">HARDWARE</span></div>
+  <div class="snav-item" onclick="scrollTo('ai')"><span class="snav-num">03</span><span class="snav-label">AI ENGINE</span></div>
+  <div class="snav-item" onclick="scrollTo('cloud')"><span class="snav-num">04</span><span class="snav-label">CLOUD</span></div>
+  <div class="snav-item" onclick="scrollTo('dashboard')"><span class="snav-num">05</span><span class="snav-label">DASHBOARD</span></div>
+  <div class="snav-item" onclick="scrollTo('swarm')"><span class="snav-num">06</span><span class="snav-label">SWARM</span></div>
+  <div class="snav-item" onclick="scrollTo('flow')"><span class="snav-num">07</span><span class="snav-label">DATA FLOW</span></div>
+</nav>
+
+<main class="content">
+
+<!-- ══════════════════════════
+     01 — SYSTEM OVERVIEW
+══════════════════════════ -->
+<section class="section" id="overview">
+  <div class="section-header">
+    <div class="section-tag">// 01 — SYSTEM OVERVIEW</div>
+    <h2 class="section-title">Four-Layer Edge-to-Dashboard Architecture</h2>
+    <p class="section-desc">SENTINEL follows a clean four-layer hierarchy. Raw sensor data is collected at the edge (bots), processed by an AI engine on a laptop, synchronized to Firebase cloud, and visualized on the command dashboard — all in real time.</p>
+  </div>
+
+  <!-- BIG OVERVIEW BLOCK DIAGRAM -->
+  <div class="overview-diagram">
+
+    <!-- LAYER 1: EDGE -->
+    <div class="layer-block lb-edge">
+      <span class="lb-icon">🤖</span>
+      <span class="lb-tag">LAYER 1 — EDGE</span>
+      <span class="lb-title">BOT HARDWARE</span>
+      <ul class="lb-items">
+        <li>ESP32 Microcontroller</li>
+        <li>ESP32-CAM (OV3660)</li>
+        <li>HLK-LD2410C Radar</li>
+        <li>VL53L0X ToF Sensor</li>
+        <li>N20 Motors + Encoders</li>
+        <li>Li-Po Battery Pack</li>
+      </ul>
+    </div>
+
+    <!-- ARROW 1 -->
+    <div class="flow-arrow">
+      <svg width="48" height="24" viewBox="0 0 48 24"><defs><marker id="a1" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(0,207,255,.6)"/></marker></defs><line x1="4" y1="12" x2="40" y2="12" stroke="rgba(0,207,255,.4)" stroke-width="1.5" marker-end="url(#a1)" stroke-dasharray="4,2"/></svg>
+      <div class="flow-label">MJPEG<br>STREAM</div>
+    </div>
+
+    <!-- LAYER 2: AI -->
+    <div class="layer-block lb-ai">
+      <span class="lb-icon">🧠</span>
+      <span class="lb-tag">LAYER 2 — INFERENCE</span>
+      <span class="lb-title">AI ENGINE</span>
+      <ul class="lb-items">
+        <li>Python 3.13</li>
+        <li>YOLOv8s ONNX</li>
+        <li>OpenCV Producer Thread</li>
+        <li>Consumer Inference Loop</li>
+        <li>Flask MJPEG Re-Stream</li>
+        <li>Temporal Smoothing</li>
+      </ul>
+    </div>
+
+    <!-- ARROW 2 -->
+    <div class="flow-arrow">
+      <svg width="48" height="24" viewBox="0 0 48 24"><defs><marker id="a2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(0,255,136,.6)"/></marker></defs><line x1="4" y1="12" x2="40" y2="12" stroke="rgba(0,255,136,.4)" stroke-width="1.5" marker-end="url(#a2)" stroke-dasharray="4,2"/></svg>
+      <div class="flow-label">REST PUT<br>bot1/ai</div>
+    </div>
+
+    <!-- LAYER 3: CLOUD -->
+    <div class="layer-block lb-cloud">
+      <span class="lb-icon">☁️</span>
+      <span class="lb-tag">LAYER 3 — CLOUD</span>
+      <span class="lb-title">FIREBASE RTDB</span>
+      <ul class="lb-items">
+        <li>bot1/ai (detection)</li>
+        <li>bot1/gps (location)</li>
+        <li>bot1/radar (presence)</li>
+        <li>bot1/camera (url)</li>
+        <li>Real-time onValue()</li>
+        <li>Sub-second sync</li>
+      </ul>
+    </div>
+
+    <!-- ARROW 3 -->
+    <div class="flow-arrow">
+      <svg width="48" height="24" viewBox="0 0 48 24"><defs><marker id="a3" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(255,170,0,.6)"/></marker></defs><line x1="4" y1="12" x2="40" y2="12" stroke="rgba(255,170,0,.4)" stroke-width="1.5" marker-end="url(#a3)" stroke-dasharray="4,2"/></svg>
+      <div class="flow-label">WebSocket<br>onValue()</div>
+    </div>
+
+    <!-- LAYER 4: DASHBOARD -->
+    <div class="layer-block lb-dash">
+      <span class="lb-icon">🖥️</span>
+      <span class="lb-tag">LAYER 4 — COMMAND</span>
+      <span class="lb-title">SENTINEL DASHBOARD</span>
+      <ul class="lb-items">
+        <li>Leaflet.js Tactical Map</li>
+        <li>10-Bot Fleet Monitor</li>
+        <li>AI Threat Panel</li>
+        <li>Live Camera Feed</li>
+        <li>Radar Visualization</li>
+        <li>GPS Tracking</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="highlight-box hb-cyan">
+    <div class="hb-title">CORE DESIGN PRINCIPLE</div>
+    <div class="hb-text">Each layer is <strong style="color:var(--accent)">loosely coupled</strong> — the bot doesn't know the dashboard exists, the AI engine doesn't know how many bots are in the field, and the dashboard doesn't care where the data came from. Firebase acts as the universal message bus that ties everything together without any direct connections between layers.</div>
+  </div>
+
+  <div class="two-col">
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">⚡</div><div><div class="dc-title">WHAT'S LIVE RIGHT NOW</div><div class="dc-sub">Fully operational pipeline</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">ESP32-CAM → Python</span><span class="dc-val ok">✔ WORKING</span></div>
+        <div class="dc-row"><span class="dc-key">YOLOv8s Inference</span><span class="dc-val ok">✔ WORKING</span></div>
+        <div class="dc-row"><span class="dc-key">Firebase bot1/ai</span><span class="dc-val ok">✔ WRITING</span></div>
+        <div class="dc-row"><span class="dc-key">Dashboard AI Panel</span><span class="dc-val ok">✔ READING</span></div>
+        <div class="dc-row"><span class="dc-key">Flask Re-Stream :5000</span><span class="dc-val ok">✔ SERVING</span></div>
+        <div class="dc-row"><span class="dc-key">mDNS sentinel.local</span><span class="dc-val ok">✔ ACTIVE</span></div>
+      </div>
+    </div>
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">🔧</div><div><div class="dc-title">INTEGRATION ROADMAP</div><div class="dc-sub">Phase 2 hardware pending</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">GPS → Firebase</span><span class="dc-val warn">PHASE 2</span></div>
+        <div class="dc-row"><span class="dc-key">Radar → ESP32 UART</span><span class="dc-val warn">PHASE 2</span></div>
+        <div class="dc-row"><span class="dc-key">Motor Encoders</span><span class="dc-val warn">PHASE 2</span></div>
+        <div class="dc-row"><span class="dc-key">ToF Obstacle Avoidance</span><span class="dc-val warn">PHASE 2</span></div>
+        <div class="dc-row"><span class="dc-key">ByteTrack Counting</span><span class="dc-val warn">PHASE 3</span></div>
+        <div class="dc-row"><span class="dc-key">Firebase Auth Upgrade</span><span class="dc-val warn">PHASE 3</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════
+     02 — HARDWARE
+══════════════════════════ -->
+<section class="section" id="hardware">
+  <div class="section-header">
+    <div class="section-tag">// 02 — HARDWARE LAYER</div>
+    <h2 class="section-title">Edge Node — Bot Hardware Stack</h2>
+    <p class="section-desc">Each bot is a self-contained edge sensor node. The ESP32 is the central brain that coordinates all peripherals, manages Wi-Fi communication, and streams data to the cloud. The ESP32-CAM is a separate module that is physically mounted on the bot and powered independently.</p>
+  </div>
+
+  <div class="cards-grid">
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">📡</div><div><div class="dc-title">ESP32-CAM (OV3660)</div><div class="dc-sub">Primary Vision Sensor</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Protocol</span><span class="dc-val hi">HTTP/MJPEG</span></div>
+        <div class="dc-row"><span class="dc-key">Resolution</span><span class="dc-val hi">VGA 640×480</span></div>
+        <div class="dc-row"><span class="dc-key">JPEG Quality</span><span class="dc-val">25 (compressed)</span></div>
+        <div class="dc-row"><span class="dc-key">Stream Port</span><span class="dc-val hi">:81/stream</span></div>
+        <div class="dc-row"><span class="dc-key">Hostname</span><span class="dc-val hi">sentinel.local</span></div>
+        <div class="dc-row"><span class="dc-key">Wi-Fi</span><span class="dc-val">2.4 GHz only</span></div>
+        <div class="dc-row"><span class="dc-key">Socket Limit</span><span class="dc-val warn">Single client only</span></div>
+        <div class="dc-row"><span class="dc-key">V-Flip</span><span class="dc-val ok">ON</span></div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">🌐</div><div><div class="dc-title">Zero-Touch Networking</div><div class="dc-sub">WiFiMulti + mDNS</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Library</span><span class="dc-val hi">WiFiMulti.h</span></div>
+        <div class="dc-row"><span class="dc-key">Known Networks</span><span class="dc-val">Ashwin, S series, Teammate</span></div>
+        <div class="dc-row"><span class="dc-key">On Boot</span><span class="dc-val">Auto-scans, picks strongest</span></div>
+        <div class="dc-row"><span class="dc-key">mDNS Hostname</span><span class="dc-val hi">sentinel.local</span></div>
+        <div class="dc-row"><span class="dc-key">Control Panel</span><span class="dc-val">http://sentinel.local</span></div>
+        <div class="dc-row"><span class="dc-key">Video Stream</span><span class="dc-val hi">http://sentinel.local:81/stream</span></div>
+        <div class="dc-row"><span class="dc-key">IP Changes?</span><span class="dc-val ok">Doesn't matter — mDNS handles it</span></div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">📻</div><div><div class="dc-title">HLK-LD2410C Radar</div><div class="dc-sub">24GHz mmWave — Phase 2</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Technology</span><span class="dc-val hi">FMCW mmWave</span></div>
+        <div class="dc-row"><span class="dc-key">Frequency</span><span class="dc-val">24.0–24.25 GHz</span></div>
+        <div class="dc-row"><span class="dc-key">Range</span><span class="dc-val">0.75m – 6.0m</span></div>
+        <div class="dc-row"><span class="dc-key">Interface</span><span class="dc-val hi">UART (GPIO 14/15)</span></div>
+        <div class="dc-row"><span class="dc-key">Can Detect</span><span class="dc-val ok">Static + moving humans</span></div>
+        <div class="dc-row"><span class="dc-key">Works in Dark?</span><span class="dc-val ok">Yes — radio waves</span></div>
+        <div class="dc-row"><span class="dc-key">Status</span><span class="dc-val warn">NOT YET INTEGRATED</span></div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">📏</div><div><div class="dc-title">GY-VL53L0XV2 ToF</div><div class="dc-sub">Obstacle Avoidance — Phase 2</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Technology</span><span class="dc-val hi">Time-of-Flight Laser</span></div>
+        <div class="dc-row"><span class="dc-key">Range</span><span class="dc-val">~2.0m indoor</span></div>
+        <div class="dc-row"><span class="dc-key">Interface</span><span class="dc-val hi">I2C (GPIO 12/13)</span></div>
+        <div class="dc-row"><span class="dc-key">Purpose</span><span class="dc-val">Obstacle avoidance</span></div>
+        <div class="dc-row"><span class="dc-key">NOT for</span><span class="dc-val warn">Room mapping</span></div>
+        <div class="dc-row"><span class="dc-key">Status</span><span class="dc-val warn">NOT YET INTEGRATED</span></div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">⚙️</div><div><div class="dc-title">N20 Motors + Encoders</div><div class="dc-sub">Mobility — Phase 2</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Motor</span><span class="dc-val">N20 6V 200RPM DC</span></div>
+        <div class="dc-row"><span class="dc-key">Feedback</span><span class="dc-val hi">Hall-effect encoders</span></div>
+        <div class="dc-row"><span class="dc-key">Wheels</span><span class="dc-val">3PI miniQ 34mm</span></div>
+        <div class="dc-row"><span class="dc-key">Chassis</span><span class="dc-val">Custom PMMA/3D-printed ABS</span></div>
+        <div class="dc-row"><span class="dc-key">Status</span><span class="dc-val warn">NOT YET INTEGRATED</span></div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">⚡</div><div><div class="dc-title">Power System</div><div class="dc-sub">Battery + Regulation</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Battery</span><span class="dc-val">3.7V–7.4V Li-Po</span></div>
+        <div class="dc-row"><span class="dc-key">Capacity</span><span class="dc-val">1000mAh minimum</span></div>
+        <div class="dc-row"><span class="dc-key">Regulation</span><span class="dc-val hi">LDO / Buck → 3.3V/5V</span></div>
+        <div class="dc-row"><span class="dc-key">Peak Current</span><span class="dc-val warn">~800mA (WiFi spike)</span></div>
+        <div class="dc-row"><span class="dc-key">Thermal Risk</span><span class="dc-val warn">ESP32 reaches 60°C</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight-box hb-amber">
+    <div class="hb-title">CRITICAL HARDWARE RULE — SINGLE SOCKET</div>
+    <div class="hb-text">The ESP32-CAM can only serve <strong style="color:var(--a4)">one video client at a time</strong>. If your browser is open on the stream URL, Python will silently hang and never connect. Always close all browser tabs showing the ESP32 stream before running main.py. This was the #1 failure point in the last presentation.</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════
+     03 — AI ENGINE
+══════════════════════════ -->
+<section class="section" id="ai">
+  <div class="section-header">
+    <div class="section-tag">// 03 — AI INFERENCE ENGINE</div>
+    <h2 class="section-title">Producer-Consumer Threading + YOLOv8s ONNX</h2>
+    <p class="section-desc">The AI engine is the heart of the system. It runs on the laptop and solves a fundamental problem: the ESP32 video stream is slow and compressed, but AI inference is CPU-heavy. A naive approach causes choppy video. The solution is two parallel threads working independently.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="highlight-box hb-green">
+        <div class="hb-title">THE CORE PROBLEM IT SOLVES</div>
+        <div class="hb-text">If you run YOLOv8s on every frame, the video stutters because inference is slow (~8 FPS). If you skip frames to speed up video, the AI misses detections. The Producer-Consumer architecture solves this by making video and AI completely independent.</div>
+      </div>
+
+      <div class="code-block" style="margin-top:16px;">
+        <div class="code-label">// ARCHITECTURE — TWO SEPARATE THREADS</div>
+        <pre><span class="cm"># THREAD 1 — FrameGrabber (Producer)</span>
+<span class="cm"># Runs as fast as possible, always reading</span>
+<span class="cm"># Drains the network buffer continuously</span>
+<span class="kw">while</span> running:
+    ret, frame = cap.read()     <span class="cm"># Always reading</span>
+    <span class="kw">with</span> lock:
+        latest_frame = frame    <span class="cm"># Overwrite old frame</span>
+
+<span class="cm"># THREAD 2 — Main (Consumer)</span>
+<span class="cm"># Runs inference only 8 times/second</span>
+<span class="kw">if</span> (now - last_inference) >= <span class="num">0.125</span>:
+    frame = latest_frame        <span class="cm"># Grab latest only</span>
+    results = model.predict(frame)  <span class="cm"># Heavy AI work</span></pre>
+      </div>
+    </div>
+
+    <div>
+      <div class="detail-card" style="height:100%;">
+        <div class="dc-header"><div class="dc-icon">🧠</div><div><div class="dc-title">YOLOv8s Model Specs</div><div class="dc-sub">Ultralytics ONNX Runtime</div></div></div>
+        <div class="dc-rows">
+          <div class="dc-row"><span class="dc-key">Model</span><span class="dc-val hi">YOLOv8s (Small)</span></div>
+          <div class="dc-row"><span class="dc-key">Format</span><span class="dc-val hi">ONNX (optimized)</span></div>
+          <div class="dc-row"><span class="dc-key">File Size</span><span class="dc-val">42.8 MB</span></div>
+          <div class="dc-row"><span class="dc-key">Input Size</span><span class="dc-val">640 × 480 VGA</span></div>
+          <div class="dc-row"><span class="dc-key">Training Data</span><span class="dc-val">COCO 80,000+ images</span></div>
+          <div class="dc-row"><span class="dc-key">Class Detected</span><span class="dc-val hi">Class 0 — Person only</span></div>
+          <div class="dc-row"><span class="dc-key">Confidence Gate</span><span class="dc-val hi">≥ 0.70 (70%)</span></div>
+          <div class="dc-row"><span class="dc-key">NMS Mode</span><span class="dc-val">Agnostic (no overlap)</span></div>
+          <div class="dc-row"><span class="dc-key">Inference Rate</span><span class="dc-val hi">~8 FPS (CPU)</span></div>
+          <div class="dc-row"><span class="dc-key">vs PyTorch</span><span class="dc-val ok">25–40% faster via ONNX</span></div>
+          <div class="dc-row"><span class="dc-key">Why not Nano?</span><span class="dc-val warn">Too many false positives</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPORAL SMOOTHING -->
+  <div style="margin-top:32px;">
+    <div class="section-tag" style="margin-bottom:16px;">// TEMPORAL SMOOTHING — FALSE POSITIVE ELIMINATION</div>
+    <div class="two-col">
+      <div class="highlight-box hb-cyan">
+        <div class="hb-title">WHY THIS EXISTS</div>
+        <div class="hb-text">A single AI frame can be wrong. A shadow, a jacket on a chair, a cat — these can fool the model for one frame. If we push an alert to Firebase every time the model says "yes", the dashboard will flash constantly. Temporal smoothing requires the model to agree across multiple frames before treating it as a real detection.</div>
+      </div>
+      <div class="detail-card">
+        <div class="dc-header"><div class="dc-icon">📊</div><div><div class="dc-title">Smoothing Parameters</div><div class="dc-sub">Sliding window algorithm</div></div></div>
+        <div class="dc-rows">
+          <div class="dc-row"><span class="dc-key">Window Size</span><span class="dc-val hi">5 frames</span></div>
+          <div class="dc-row"><span class="dc-key">Threshold</span><span class="dc-val hi">3 of 5 must be positive</span></div>
+          <div class="dc-row"><span class="dc-key">Firebase fires when</span><span class="dc-val ok">State CHANGES only</span></div>
+          <div class="dc-row"><span class="dc-key">Firebase fires on</span><span class="dc-val">CLEAR→THREAT or THREAT→CLEAR</span></div>
+          <div class="dc-row"><span class="dc-key">Not on every frame?</span><span class="dc-val ok">Correct — state change only</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLASK RESTREAM -->
+  <div style="margin-top:32px;">
+    <div class="section-tag" style="margin-bottom:16px;">// FLASK RE-STREAM SERVER — LOCAL HTTP API</div>
+    <div class="cards-grid">
+      <div class="detail-card">
+        <div class="dc-header"><div class="dc-icon">🎥</div><div><div class="dc-title">GET /feed</div><div class="dc-sub">localhost:5000/feed</div></div></div>
+        <div class="dc-rows">
+          <div class="dc-row"><span class="dc-key">Type</span><span class="dc-val hi">MJPEG stream</span></div>
+          <div class="dc-row"><span class="dc-key">Content</span><span class="dc-val">AI-annotated video with bounding boxes</span></div>
+          <div class="dc-row"><span class="dc-key">Used by</span><span class="dc-val">Dashboard camera panel</span></div>
+          <div class="dc-row"><span class="dc-key">CORS</span><span class="dc-val ok">Enabled (*)</span></div>
+        </div>
+      </div>
+      <div class="detail-card">
+        <div class="dc-header"><div class="dc-icon">📡</div><div><div class="dc-title">GET /status</div><div class="dc-sub">localhost:5000/status</div></div></div>
+        <div class="dc-rows">
+          <div class="dc-row"><span class="dc-key">inference_fps</span><span class="dc-val hi">float</span></div>
+          <div class="dc-row"><span class="dc-key">threat_active</span><span class="dc-val hi">boolean</span></div>
+          <div class="dc-row"><span class="dc-key">confidence</span><span class="dc-val hi">integer 0–100</span></div>
+          <div class="dc-row"><span class="dc-key">persons_in_frame</span><span class="dc-val hi">integer</span></div>
+          <div class="dc-row"><span class="dc-key">uptime_s</span><span class="dc-val">seconds since start</span></div>
+          <div class="dc-row"><span class="dc-key">source</span><span class="dc-val">WEBCAM or ESP32-CAM</span></div>
+        </div>
+      </div>
+      <div class="detail-card">
+        <div class="dc-header"><div class="dc-icon">📤</div><div><div class="dc-title">Firebase Push</div><div class="dc-sub">REST API PUT</div></div></div>
+        <div class="dc-rows">
+          <div class="dc-row"><span class="dc-key">Method</span><span class="dc-val hi">HTTP PUT</span></div>
+          <div class="dc-row"><span class="dc-key">Endpoint</span><span class="dc-val">rob-track-default-rtdb/bot1/ai.json</span></div>
+          <div class="dc-row"><span class="dc-key">personDetected</span><span class="dc-val hi">true / false</span></div>
+          <div class="dc-row"><span class="dc-key">confidence</span><span class="dc-val hi">integer 0–100</span></div>
+          <div class="dc-row"><span class="dc-key">timestamp</span><span class="dc-val">HH:MM:SS string</span></div>
+          <div class="dc-row"><span class="dc-key">Fires when?</span><span class="dc-val ok">State change only</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════
+     04 — CLOUD
+══════════════════════════ -->
+<section class="section" id="cloud">
+  <div class="section-header">
+    <div class="section-tag">// 04 — CLOUD LAYER</div>
+    <h2 class="section-title">Firebase Realtime Database — The Universal Bus</h2>
+    <p class="section-desc">Firebase RTDB is the synchronization backbone. It acts as a shared memory space between the Python AI engine and the web dashboard. The Python script writes to it via REST API. The dashboard reads from it via persistent WebSocket listeners that fire the moment data changes.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="schema-tree">
+        <span class="st-root">rob-track-default-rtdb</span>
+        <span class="st-indent"><span class="st-node">└── bot1/</span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-node">├── ai/</span>  <span class="st-dim">← Python writes here</span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">├── personDetected:</span> <span class="st-val">true/false</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">├── confidence:</span> <span class="st-val">85</span> <span class="st-dim">(integer 0–100)</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">└── timestamp:</span> <span class="st-val">"14:22:05"</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-node">├── gps/</span>  <span class="st-dim">← Phase 2 (empty now)</span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">├── latitude:</span> <span class="st-val">null</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">├── longitude:</span> <span class="st-val">null</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">├── satellites:</span> <span class="st-val">null</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">└── timestamp:</span> <span class="st-val">null</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-node">├── radar/</span>  <span class="st-dim">← Phase 2 (empty now)</span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">└── presence:</span> <span class="st-val">null</span></span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-node">└── camera/</span>  <span class="st-dim">← Phase 2 (empty now)</span></span></span>
+        <span class="st-indent"><span class="st-indent"><span class="st-indent"><span class="st-leaf">└── stream_url:</span> <span class="st-val">null</span></span></span></span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="highlight-box hb-amber">
+        <div class="hb-title">IMPORTANT — CONFIDENCE FORMAT</div>
+        <div class="hb-text">Python stores confidence as an <strong style="color:var(--a4)">integer 0–100</strong> (e.g., 85 means 85%). The dashboard divides by 100 before displaying (85 → 0.85). This is intentional — Firebase doesn't support decimals reliably at high write frequency.</div>
+      </div>
+      <div class="detail-card">
+        <div class="dc-header"><div class="dc-icon">🔗</div><div><div class="dc-title">Dashboard Listeners</div><div class="dc-sub">4 real-time onValue() bindings</div></div></div>
+        <div class="dc-rows">
+          <div class="dc-row"><span class="dc-key">bot1/ai</span><span class="dc-val ok">✔ ACTIVE — drives threat panel</span></div>
+          <div class="dc-row"><span class="dc-key">bot1/gps</span><span class="dc-val warn">BOUND — no data yet</span></div>
+          <div class="dc-row"><span class="dc-key">bot1/radar</span><span class="dc-val warn">BOUND — no data yet</span></div>
+          <div class="dc-row"><span class="dc-key">bot1/camera</span><span class="dc-val warn">BOUND — no data yet</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════
+     05 — DASHBOARD
+══════════════════════════ -->
+<section class="section" id="dashboard">
+  <div class="section-header">
+    <div class="section-tag">// 05 — COMMAND DASHBOARD</div>
+    <h2 class="section-title">SENTINEL v3.0 — Three-Layer UI Navigation</h2>
+    <p class="section-desc">The dashboard is a single HTML file with no build tools. It operates in three navigation layers that an operator moves through — from the big-picture map, into the fleet overview, into individual bot detail. Firebase listeners update everything in real time.</p>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num">L1</div>
+      <div class="pipe-body">
+        <div class="pipe-title">COMMAND MAP — Always Visible</div>
+        <div class="pipe-desc">Full-screen Leaflet.js tactical map showing all 10 bots as live pulsing markers. Green = online, Red = alert, Grey = offline. BOT-01's marker moves with real GPS data from Firebase. Right side shows the AI Threat Monitor panel watching the entire network.</div>
+        <div class="pipe-code">Leaflet.js + OpenStreetMap + Firebase onValue()</div>
+      </div>
+      <div class="pipe-tag hi"><span>ALWAYS ON</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">L2</div>
+      <div class="pipe-body">
+        <div class="pipe-title">UNIT DRAWER — Slides in from Left</div>
+        <div class="pipe-desc">Clicking "NETWORK UNITS" slides in a panel showing Unit Alpha (BOT-01 to BOT-05) and Unit Bravo (BOT-06 to BOT-10). Live search bar filters by ID, role, or status. Filter buttons for ALL / ONLINE / ALERT / OFFLINE. Each card shows battery, radar state, signal strength.</div>
+        <div class="pipe-code">CSS transform translateX() + real-time DOM filtering</div>
+      </div>
+      <div class="pipe-tag hi"><span>ON DEMAND</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">L3</div>
+      <div class="pipe-body">
+        <div class="pipe-title">BOT DETAIL MODAL — Full Overlay</div>
+        <div class="pipe-desc">Clicking any bot card or map marker opens a full-screen modal. BOT-01 is fully wired to live hardware. BOT-02 to BOT-10 show realistic demo data with animations. Panels: Camera Feed, AI Detection, GPS, Radar, Kinetics, Event Log.</div>
+        <div class="pipe-code">BOT-01: Firebase + /status polling | BOT-02–10: Simulated</div>
+      </div>
+      <div class="pipe-tag hi"><span>PER BOT</span></div>
+    </div>
+  </div>
+
+  <div class="cards-grid" style="margin-top:32px;">
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">🗺️</div><div><div class="dc-title">Map Panel</div><div class="dc-sub">Leaflet.js tactical view</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Map Library</span><span class="dc-val hi">Leaflet.js v1.9.4</span></div>
+        <div class="dc-row"><span class="dc-key">Tiles</span><span class="dc-val">OpenStreetMap (free)</span></div>
+        <div class="dc-row"><span class="dc-key">Dark Filter</span><span class="dc-val">brightness(.45) saturate(.4)</span></div>
+        <div class="dc-row"><span class="dc-key">BOT-01 Marker</span><span class="dc-val ok">Moves with Firebase GPS</span></div>
+        <div class="dc-row"><span class="dc-key">Click Marker</span><span class="dc-val">Opens bot detail modal</span></div>
+        <div class="dc-row"><span class="dc-key">API Key?</span><span class="dc-val ok">Not needed</span></div>
+      </div>
+    </div>
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">⚠️</div><div><div class="dc-title">AI Threat Monitor</div><div class="dc-sub">Right panel — always visible</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">Data source</span><span class="dc-val hi">Firebase bot1/ai listener</span></div>
+        <div class="dc-row"><span class="dc-key">THREAT state</span><span class="dc-val err">conf ≥ 70 + detected</span></div>
+        <div class="dc-row"><span class="dc-key">CAUTION state</span><span class="dc-val warn">conf 40–69 + detected</span></div>
+        <div class="dc-row"><span class="dc-key">CLEAR state</span><span class="dc-val ok">personDetected = false</span></div>
+        <div class="dc-row"><span class="dc-key">Event feed</span><span class="dc-val">Last 20 detections logged</span></div>
+      </div>
+    </div>
+    <div class="detail-card">
+      <div class="dc-header"><div class="dc-icon">🎥</div><div><div class="dc-title">Camera Feed (BOT-01)</div><div class="dc-sub">Dual source support</div></div></div>
+      <div class="dc-rows">
+        <div class="dc-row"><span class="dc-key">ESP-CAM direct</span><span class="dc-val">http://sentinel.local:81/stream</span></div>
+        <div class="dc-row"><span class="dc-key">AI-annotated</span><span class="dc-val hi">http://localhost:5000/feed</span></div>
+        <div class="dc-row"><span class="dc-key">AI feed shows</span><span class="dc-val ok">Bounding boxes on persons</span></div>
+        <div class="dc-row"><span class="dc-key">Connection</span><span class="dc-val">Manual URL input + connect</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════
+     06 — SWARM
+══════════════════════════ -->
+<section class="section" id="swarm">
+  <div class="section-header">
+    <div class="section-tag">// 06 — SWARM INTELLIGENCE CONCEPT</div>
+    <h2 class="section-title">Why Swarm? The Design Philosophy</h2>
+    <p class="section-desc">Traditional surveillance uses a single camera or robot. SENTINEL uses multiple coordinated agents — a swarm — where each bot operates independently but contributes to a unified intelligence picture. If one bot fails, the others continue. This is the core IEEE research contribution.</p>
+  </div>
+
+  <div class="two-col" style="margin-bottom:32px;">
+    <div>
+      <table class="comp-table">
+        <thead><tr><th>PROPERTY</th><th>SINGLE ROBOT</th><th>SENTINEL SWARM</th></tr></thead>
+        <tbody>
+          <tr><td>Coverage</td><td><span class="badge warn">One area only</span></td><td><span class="badge ok">Multiple zones simultaneously</span></td></tr>
+          <tr><td>Failure tolerance</td><td><span class="badge err">Total system failure</span></td><td><span class="badge ok">Others continue operating</span></td></tr>
+          <tr><td>Scalability</td><td><span class="badge warn">Fixed — can't expand</span></td><td><span class="badge ok">Add bots = more coverage</span></td></tr>
+          <tr><td>Response time</td><td><span class="badge warn">Must travel to event</span></td><td><span class="badge ok">Nearest bot responds</span></td></tr>
+          <tr><td>Coordination</td><td><span class="badge err">None</span></td><td><span class="badge ok">Firebase shared state</span></td></tr>
+          <tr><td>Cost per unit</td><td><span class="badge err">High — one powerful bot</span></td><td><span class="badge ok">Low — many simple bots</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="highlight-box hb-green">
+        <div class="hb-title">THE SWARM ARGUMENT FOR IEEE</div>
+        <div class="hb-text">The paper argues that <strong style="color:var(--a2)">many simple, intelligent units outperform one complex unit</strong>. Each bot needs only to see its local area and report findings. Intelligence emerges at the cloud layer where all bot data converges. This mirrors how ant colonies, bird flocks, and military drone swarms operate.</div>
+      </div>
+      <div class="highlight-box hb-cyan" style="margin-top:16px;">
+        <div class="hb-title">NO SINGLE POINT OF FAILURE</div>
+        <div class="hb-text">If BOT-03 crashes, BOT-04 keeps patrolling its zone. If the laptop running inference goes down, bots continue streaming and radar keeps detecting. The system degrades gracefully rather than failing completely.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SWARM FLEET DIAGRAM -->
+  <div class="swarm-diagram">
+    <div class="swarm-center">
+      <div class="swarm-hub">
+        <div class="swarm-hub-title">FIREBASE RTDB</div>
+        <div class="swarm-hub-sub">SHARED INTELLIGENCE HUB · rob-track</div>
+      </div>
+    </div>
+    <div class="swarm-bots">
+      <div class="swarm-bot live">
+        <div class="sb-id">BOT-01</div>
+        <div class="sb-role">Primary Intelligence</div>
+        <div class="sb-status">● LIVE HARDWARE</div>
+      </div>
+      <div class="swarm-bot online">
+        <div class="sb-id">BOT-02</div>
+        <div class="sb-role">Area Surveillance</div>
+        <div class="sb-status">● ONLINE</div>
+      </div>
+      <div class="swarm-bot alert">
+        <div class="sb-id">BOT-03</div>
+        <div class="sb-role">Perimeter Guard</div>
+        <div class="sb-status">⚠ ALERT</div>
+      </div>
+      <div class="swarm-bot online">
+        <div class="sb-id">BOT-04</div>
+        <div class="sb-role">Corridor Monitor</div>
+        <div class="sb-status">● ONLINE</div>
+      </div>
+      <div class="swarm-bot standby">
+        <div class="sb-id">BOT-05</div>
+        <div class="sb-role">Entry Point</div>
+        <div class="sb-status">◌ STANDBY</div>
+      </div>
+      <div class="swarm-bot online">
+        <div class="sb-id">BOT-06</div>
+        <div class="sb-role">Mesh Node A</div>
+        <div class="sb-status">● ONLINE</div>
+      </div>
+      <div class="swarm-bot alert">
+        <div class="sb-id">BOT-07</div>
+        <div class="sb-role">Zone Delta Watch</div>
+        <div class="sb-status">⚠ ALERT</div>
+      </div>
+      <div class="swarm-bot offline">
+        <div class="sb-id">BOT-08</div>
+        <div class="sb-role">Backup Node</div>
+        <div class="sb-status">✕ OFFLINE</div>
+      </div>
+      <div class="swarm-bot online">
+        <div class="sb-id">BOT-09</div>
+        <div class="sb-role">South Gate</div>
+        <div class="sb-status">● ONLINE</div>
+      </div>
+      <div class="swarm-bot standby">
+        <div class="sb-id">BOT-10</div>
+        <div class="sb-role">Reserve Unit</div>
+        <div class="sb-status">◌ STANDBY</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════
+     07 — DATA FLOW
+══════════════════════════ -->
+<section class="section" id="flow">
+  <div class="section-header">
+    <div class="section-tag">// 07 — COMPLETE DATA FLOW</div>
+    <h2 class="section-title">End-to-End Signal Journey</h2>
+    <p class="section-desc">Follow a single detection event from the moment a person enters the camera frame to the moment the dashboard shows THREAT. Every step is explained so you can answer any question from a judge about exactly how data moves through the system.</p>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num">①</div>
+      <div class="pipe-body">
+        <div class="pipe-title">PERSON ENTERS CAMERA FIELD OF VIEW</div>
+        <div class="pipe-desc">The ESP32-CAM's OV3660 sensor captures the scene. The image is compressed to JPEG at quality 25 and streamed as MJPEG over Wi-Fi on port 81. The hostname sentinel.local (mDNS) means no IP address needs to be known.</div>
+        <div class="pipe-code">http://sentinel.local:81/stream → MJPEG frames</div>
+      </div>
+      <div class="pipe-tag hi"><span>HARDWARE</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">②</div>
+      <div class="pipe-body">
+        <div class="pipe-title">FRAMEGRABBER THREAD CATCHES THE FRAME</div>
+        <div class="pipe-desc">Thread 1 (FrameGrabber) continuously calls cap.read() to drain the network buffer. It stores only the latest frame in a thread-safe Lock. Old frames are immediately overwritten — we never queue frames, only keep the freshest one.</div>
+        <div class="pipe-code">threading.Lock() → latest_frame (always fresh)</div>
+      </div>
+      <div class="pipe-tag hi"><span>PYTHON THREAD 1</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">③</div>
+      <div class="pipe-body">
+        <div class="pipe-title">MAIN THREAD GRABS FRAME FOR INFERENCE (8×/sec)</div>
+        <div class="pipe-desc">Every 125ms, the main thread reads the latest frame from the Lock. It resizes it to exactly 640×480 VGA for the model. This timing is controlled by comparing timestamps — if not enough time has passed, it skips and just renders video.</div>
+        <div class="pipe-code">if (now - last_inference) >= 0.125s → run YOLOv8s</div>
+      </div>
+      <div class="pipe-tag hi"><span>PYTHON MAIN THREAD</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">④</div>
+      <div class="pipe-body">
+        <div class="pipe-title">YOLOv8s ONNX ANALYSES THE FRAME</div>
+        <div class="pipe-desc">The model scans the 640×480 frame for Class 0 (Person). It outputs bounding boxes with confidence scores. Only detections with confidence ≥ 0.70 are kept. Agnostic NMS removes overlapping boxes. The result is a list of confirmed human positions.</div>
+        <div class="pipe-code">model.predict(frame, classes=[0], conf=0.70, agnostic_nms=True)</div>
+      </div>
+      <div class="pipe-tag hi"><span>AI INFERENCE</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">⑤</div>
+      <div class="pipe-body">
+        <div class="pipe-title">TEMPORAL SMOOTHING DECIDES IF IT'S REAL</div>
+        <div class="pipe-desc">The detection result (true/false) is pushed into a deque of the last 5 frames. If 3 or more of the last 5 frames say "person detected", it is confirmed as a stable detection. A single frame saying yes is NOT enough — this eliminates flickering false positives.</div>
+        <div class="pipe-code">deque(maxlen=5) → sum >= 3 → stable = True</div>
+      </div>
+      <div class="pipe-tag ok"><span>SMOOTHING</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">⑥</div>
+      <div class="pipe-body">
+        <div class="pipe-title">STATE CHANGE TRIGGERS FIREBASE PUSH</div>
+        <div class="pipe-desc">Firebase is ONLY written to when the stable detection state CHANGES — from CLEAR to THREAT, or THREAT to CLEAR. This prevents spamming Firebase with thousands of identical writes per minute. One clean write per state change.</div>
+        <div class="pipe-code">if stable != was_stable → firebase_push("bot1/ai", {personDetected, confidence, timestamp})</div>
+      </div>
+      <div class="pipe-tag ok"><span>FIREBASE WRITE</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">⑦</div>
+      <div class="pipe-body">
+        <div class="pipe-title">DASHBOARD LISTENER FIRES INSTANTLY</div>
+        <div class="pipe-desc">The dashboard has a persistent WebSocket connection to Firebase via onValue('bot1/ai'). The moment Firebase receives the write in step 6, this listener fires on the browser — sub-second latency. The AI Threat panel updates, the confidence bar animates, and if confidence ≥ 70 the threat card turns red.</div>
+        <div class="pipe-code">fbDb.ref('bot1/ai').onValue(snap → updateThreatPanel(snap.val()))</div>
+      </div>
+      <div class="pipe-tag ok"><span>DASHBOARD UPDATE</span></div>
+    </div>
+    <div class="pipe-connector"></div>
+    <div class="pipe-step">
+      <div class="pipe-num">⑧</div>
+      <div class="pipe-body">
+        <div class="pipe-title">OPERATOR SEES THREAT — TOTAL LATENCY ~400ms</div>
+        <div class="pipe-desc">From the moment the person enters frame to the moment the dashboard shows THREAT: ~125ms for frame capture interval + ~80ms for ONNX inference + ~50ms for Firebase propagation + ~50ms for browser render. Total end-to-end latency is approximately 300–500ms. Well within real-time surveillance requirements.</div>
+        <div class="pipe-code">Total: ~400ms frame-to-alert latency</div>
+      </div>
+      <div class="pipe-tag ok"><span>RESULT</span></div>
+    </div>
+  </div>
+
+  <!-- HOW TO EXPLAIN IT -->
+  <div style="margin-top:40px;">
+    <div class="section-tag" style="margin-bottom:20px;">// HOW TO EXPLAIN THIS TO A JUDGE — SIMPLE VERSION</div>
+    <div class="cards-grid">
+      <div class="highlight-box hb-cyan" style="margin:0;">
+        <div class="hb-title">IF THEY ASK: "HOW DOES THE AI WORK?"</div>
+        <div class="hb-text">We use YOLOv8s — a neural network trained on 80,000 images to recognize humans. It runs on the laptop because the ESP32 is too weak for AI. The camera sends video wirelessly, Python captures it, runs the model 8 times per second, and if it sees a person with 70% or more confidence it sends an alert.</div>
+      </div>
+      <div class="highlight-box hb-green" style="margin:0;">
+        <div class="hb-title">IF THEY ASK: "WHY TWO THREADS?"</div>
+        <div class="hb-text">One thread does nothing but grab video frames continuously so the stream stays smooth. A second thread does the heavy AI work 8 times per second. Without this separation, running AI on every frame would cause the video to freeze — it's like having one worker drive the car while another reads the map.</div>
+      </div>
+      <div class="highlight-box hb-amber" style="margin:0;">
+        <div class="hb-title">IF THEY ASK: "WHY FIREBASE?"</div>
+        <div class="hb-text">Firebase is our real-time message bus. The Python script writes detection results to it. The dashboard reads from it. They never talk directly to each other — Firebase sits in the middle. This means we could have 100 dashboards on 100 computers all showing the same live data simultaneously.</div>
+      </div>
+      <div class="highlight-box hb-red" style="margin:0;">
+        <div class="hb-title">IF THEY ASK: "WHAT'S NOT INTEGRATED YET?"</div>
+        <div class="hb-text">The radar, GPS, and motors are planned for Phase 2. The current system demonstrates the core AI vision pipeline end-to-end. The dashboard shows simulation for these sensors, clearly labeled. Our contribution is the Producer-Consumer architecture, ONNX optimization, and temporal smoothing — all of which are fully working.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer class="site-footer">
+  <div class="footer-brand">SENTINEL v3.0</div>
+  <div class="footer-meta">ISBCAPD · VAISHAK D. KARKERA · ASHWIN SURESH · NEHA RAJ · PREETHAM KRISHNA · IEEE 2026</div>
+  <div class="footer-meta" style="color:var(--accent);" id="footer-clock">--:--:--</div>
+</footer>
+
+<script>
+// ── SCROLL PROGRESS ──
+window.addEventListener('scroll', () => {
+  const total = document.body.scrollHeight - window.innerHeight;
+  const pct = (window.scrollY / total) * 100;
+  document.getElementById('scroll-prog').style.width = pct + '%';
+});
+
+// ── SECTIONS NAV ACTIVE ──
+const sections = ['overview','hardware','ai','cloud','dashboard','swarm','flow'];
+const navItems = document.querySelectorAll('.snav-item');
+
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      const idx = sections.indexOf(id);
+      navItems.forEach((n,i) => n.classList.toggle('active', i === idx));
+      document.querySelectorAll('.hnav-btn').forEach((b,i) => b.classList.toggle('active', i === idx));
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) obs.observe(el);
+});
+
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── CLOCK ──
+function tick() {
+  const t = new Date().toTimeString().slice(0,8);
+  document.getElementById('footer-clock').textContent = t;
+}
+setInterval(tick, 1000); tick();
+</script>
+</body>
+</html>
