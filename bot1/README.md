@@ -10,10 +10,10 @@
 | Stage | File | Description | Status |
 |-------|------|-------------|--------|
 | 1 | `stage1_motor_test` | Verify all 4 movement directions | ✅ **DONE** |
-| 2 | `stage2_encoder_calib` | Calibrate encoder counts/revolution | ⬜ Next |
-| 3 | `stage3_straight_30cm` | Drive exactly 30 cm (encoder-controlled) | ⬜ |
-| 4 | `stage4_ultrasonic_test` | Verify HC-SR04 distance readings | ⬜ |
-| 5 | `stage5_servo_test` | Verify SG90 servo positions | ⬜ |
+| 2 | `stage2_encoder_calib` | Calibrate encoder counts/revolution | ✅ **DONE** |
+| 3 | `stage3_straight_30cm` | Drive exactly 30 cm (encoder-controlled) | ✅ **DONE** |
+| 4 | `stage4_ultrasonic_test` | Verify HC-SR04 distance readings | ✅ **DONE** |
+| 5 | `stage5_servo_test` | Verify SG90 servo positions | ⬜ Next |
 | 6 | `stage6_scan` | Servo sweep + obstacle distances | ⬜ |
 | 7 | `stage7_full_bot1` | Full run: move + scan + data packet | ⬜ |
 | 8 | `stage8_espnow_tx` | Transmit packet to Bot 2 via ESP-NOW | ⬜ |
@@ -169,16 +169,16 @@ bot1/
 │   └── stage1_motor_test.ino         ✅ DONE
 │
 ├── stage2_encoder_calib/
-│   └── stage2_encoder_calib.ino      ⬅ DO THIS NEXT
+│   └── stage2_encoder_calib.ino      ✅ DONE
 │
 ├── stage3_straight_30cm/
-│   └── stage3_straight_30cm.ino
+│   └── stage3_straight_30cm.ino      ✅ DONE
 │
 ├── stage4_ultrasonic_test/
-│   └── stage4_ultrasonic_test.ino
+│   └── stage4_ultrasonic_test.ino    ✅ DONE
 │
 ├── stage5_servo_test/
-│   └── stage5_servo_test.ino
+│   └── stage5_servo_test.ino         ⬅ DO THIS NEXT
 │
 ├── stage6_scan/
 │   └── stage6_scan.ino
