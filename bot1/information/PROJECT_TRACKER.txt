@@ -1,0 +1,152 @@
+================================================================================
+  ESP32 SWARM BOT 1 — MASTER PROJECT TRACKER
+  Last Updated: 2026-09-11
+================================================================================
+
+GOAL FOR TOMORROW'S PRESENTATION:
+  Bot 1 → moves 30 cm → scans obstacles → sends data via ESP-NOW
+  Bot 2 → receives ESP-NOW packet → prints on Serial Monitor
+
+================================================================================
+  CONFIRMED HARDWARE
+================================================================================
+
+  Component               Detail
+  ─────────────────────────────────────────────────────────────────────────────
+  Microcontroller         ESP32 DevKit V1
+  Motors                  2× N20 6V 200RPM with encoder (6-pin: M1|GND|C1|C2|VCC|M2)
+  Wheels                  34 mm diameter
+  Motor Driver            L298N  (ENA/ENB jumpers MUST be removed)
+  Servo                   SG90
+  Ultrasonic              HC-SR04
+  Power (motors)          External 6V supply → L298N VS terminal
+
+================================================================================
+  CONFIRMED PIN MAP  ★ SINGLE SOURCE OF TRUTH ★
+================================================================================
+
+  MOTOR DRIVER (L298N)
+  ─────────────────────
+  IN1  →  GPIO 27       Left motor direction A
+  IN2  →  GPIO 26       Left motor direction B
+  IN3  →  GPIO 25       Right motor direction A
+  IN4  →  GPIO 33       Right motor direction B
+  ENA  →  GPIO 14       Left motor PWM speed
+  ENB  →  GPIO 32       Right motor PWM speed
+
+  ENCODERS (Corrected after diagnosis)
+  ─────────────────────
+  Left  A  →  GPIO 21   (INPUT_PULLUP)
+  Left  B  →  GPIO 22   (INPUT_PULLUP)
+  Right A  →  GPIO 18   (INPUT_PULLUP)
+  Right B  →  GPIO 19   (INPUT_PULLUP)
+  Encoder VCC  →  ESP32 3.3V
+  Encoder GND  →  ESP32 GND
+
+  ULTRASONIC (HC-SR04)
+  ─────────────────────
+  TRIG  →  GPIO 5
+  ECHO  →  GPIO 4       ← via 1kΩ/2kΩ voltage divider (5V→3.3V safe)
+  ⚠ ECHO divider:  ECHO → 1kΩ → GPIO4 → 2kΩ → GND
+
+  SERVO (SG90)
+  ─────────────────────
+  Signal  →  GPIO 13
+  VCC     →  External 5V (NOT ESP32 3.3V)
+  GND     →  Common GND
+
+  ⚠ PIN CONFLICT NOTE:
+    Old notes (info1.txt) had ECHO→GPIO18, Servo→GPIO19.
+    Those conflict with encoder pins. UPDATED to GPIO4 and GPIO13.
+
+================================================================================
+  CONFIRMED MOTOR DIRECTION LOGIC
+================================================================================
+
+  leftMotor(+speed)   → IN1=LOW,  IN2=HIGH   (forward)
+  leftMotor(-speed)   → IN1=HIGH, IN2=LOW    (backward)
+  rightMotor(+speed)  → IN3=LOW,  IN4=HIGH   (forward)
+  rightMotor(-speed)  → IN3=HIGH, IN4=LOW    (backward)
+
+  TURN LEFT:   leftMotor(-spd), rightMotor(+spd)
+  TURN RIGHT:  leftMotor(+spd), rightMotor(-spd)
+
+================================================================================
+  CALIBRATION DATA
+================================================================================
+
+  Wheel diameter:       34 mm
+  Wheel circumference:  π × 34 = 106.8 mm ≈ 10.68 cm
+  Encoder counts/rev:   712 (avg)
+  Counts per cm:        66.7 counts/cm
+  Target 30 cm:         2001 counts
+
+================================================================================
+  POWER WIRING
+================================================================================
+
+  External 6V battery (+) → L298N VS (marked +12V)
+  External 6V battery (-) → L298N GND
+  L298N GND               → ESP32 GND     ← COMMON GROUND
+  L298N 5V output         → ESP32 VIN     (if confirmed safe on your module)
+  ESP32 3.3V              → Encoder VCC
+
+  DO NOT connect 6V directly to ESP32 3.3V or encoder VCC.
+  DO NOT power motors from ESP32 VIN.
+
+================================================================================
+  BUILD STAGES — STATUS
+================================================================================
+
+  Stage 1  Motor Test                   [✓] DONE
+  Stage 2  Encoder Calibration          [✓] DONE
+  Stage 3  Straight 30cm Movement       [✓] DONE
+  Stage 4  HC-SR04 Ranging Test         [ ] NOT STARTED
+  Stage 5  Servo Sweep Test             [ ] NOT STARTED
+  Stage 6  Combined Scan                [ ] NOT STARTED
+  Stage 7  Full Bot 1 (move+scan+pack)  [ ] NOT STARTED
+  Stage 8  ESP-NOW Transmit             [ ] NOT STARTED
+
+  Update [✓] DONE | [/] IN PROGRESS | [✗] FAILED (note why)
+
+================================================================================
+  STAGE RESULTS LOG
+================================================================================
+
+  Stage 1:  Motor wiring fixed (turns corrected)
+  Stage 2:  Counts/rev = 712 avg  Counts/cm = 66.7
+  Stage 3:  Straight movement achieved (encoder pins swapped, absolute val sync used)
+  Stage 4:  HC-SR04 reading at 30cm = _______ cm
+  Stage 5:  Servo positions confirmed? Y / N
+  Stage 6:  Scan working? Y / N
+  Stage 7:  Full run working? Y / N
+  Stage 8:  ESP-NOW packet received on Bot 2? Y / N
+
+================================================================================
+  FOR FRIEND (BOT 2)
+================================================================================
+
+  Bot 2 needs:
+    - ESP32 with stage8_espnow_rx.ino uploaded
+    - Serial Monitor open at 115200 baud
+    - Bot 2 MAC address → tell your friend to run this one-liner:
+        Upload any sketch that does:
+          Serial.println(WiFi.macAddress());
+        And send you the printed MAC address.
+    - You put that MAC address into stage8_espnow_tx.ino
+
+================================================================================
+  FIRMWARE FILES (in d:\MAJOR PROJECT\bot1\)
+================================================================================
+
+  stage1_motor_test\        stage1_motor_test.ino
+  stage2_encoder_calib\     stage2_encoder_calib.ino
+  stage3_straight_30cm\     stage3_straight_30cm.ino
+  stage4_ultrasonic_test\   stage4_ultrasonic_test.ino
+  stage5_servo_test\        stage5_servo_test.ino
+  stage6_scan\              stage6_scan.ino
+  stage7_full_bot1\         stage7_full_bot1.ino
+  stage8_espnow_tx\         stage8_espnow_tx.ino
+  stage8_espnow_rx\         stage8_espnow_rx.ino   ← for friend's Bot 2
+
+================================================================================

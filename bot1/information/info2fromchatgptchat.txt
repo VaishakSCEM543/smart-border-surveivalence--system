@@ -1,0 +1,631 @@
+Yes. Now you can connect the battery to the L298N, but let's do it carefully because your motors are the 6 V, 200 RPM N20 encoder motors.
+
+We are not doing the 30 cm movement yet. This next test is to verify that the motors run and the encoders count at the same time.
+
+1. What you need
+
+For this test:
+
+ESP32
+2 × N20 6 V 200 RPM encoder motors
+2 × 34 mm wheels
+L298N motor driver
+6 V motor battery/supply
+USB cable for ESP32
+Jumper wires
+
+No sensors, no MPU6050, no Wi-Fi, no swarm communication yet.
+
+2. Complete wiring
+LEFT encoder motor
+
+Your 6-pin motor connector:
+
+M1 | GND | C1 | C2 | VCC | M2
+
+Connect:
+
+M1  → L298N OUT1
+M2  → L298N OUT2
+
+GND → ESP32 GND
+VCC → ESP32 3.3V
+
+C1  → ESP32 GPIO 18
+C2  → ESP32 GPIO 19
+RIGHT encoder motor
+M1  → L298N OUT3
+M2  → L298N OUT4
+
+GND → ESP32 GND
+VCC → ESP32 3.3V
+
+C1  → ESP32 GPIO 21
+C2  → ESP32 GPIO 22
+3. L298N → ESP32
+
+Use the same motor-control pins that we already tested:
+
+L298N       ESP32
+------------------
+IN1   →     GPIO 27
+IN2   →     GPIO 26
+
+IN3   →     GPIO 25
+IN4   →     GPIO 33
+
+ENA   →     GPIO 14
+ENB   →     GPIO 32
+
+GND   →     ESP32 GND
+ENA / ENB
+
+If your L298N has the little jumpers on ENA and ENB, remove them.
+
+We want:
+
+GPIO 14 → ENA
+GPIO 32 → ENB
+
+because we're controlling motor speed with PWM.
+
+4. Battery → L298N
+
+This is the important part.
+
+Your motor is rated 6 V, so use an appropriate 6 V motor supply.
+
+Connect:
+
+Battery +  → L298N +12V / VS terminal
+Battery -  → L298N GND
+
+Don't get confused by the label +12V on many L298N modules.
+
+That terminal is actually the motor supply input (VS); it can be used with a lower motor voltage within the driver's specifications.
+
+VERY IMPORTANT
+
+Do NOT connect:
+
+6 V battery → ESP32 3.3V
+
+and do NOT connect:
+
+6 V battery → encoder VCC
+
+Encoder VCC remains:
+
+ESP32 3.3V → encoder VCC
+5. L298N 5 V logic supply
+
+This part depends on your particular L298N board.
+
+Because you're using only 6 V motor supply, I don't want you to blindly rely on the L298N's onboard 5 V regulator.
+
+If your board has:
+
+12V    GND    5V
+
+and an 5V-EN jumper, tell me/show me a photo of your L298N before connecting the 5 V logic supply.
+
+For the moment, the safest thing is:
+
+Don't connect anything to the L298N 5 V pin yet.
+
+We already know your L298N motor-control inputs worked with the ESP32, so we'll verify the exact module arrangement if necessary.
+
+6. Common ground
+
+This is absolutely required:
+
+             GND
+              │
+       ┌──────┼─────────┐
+       │      │         │
+     ESP32   L298N   Encoder
+
+In practical terms:
+
+Battery -
+   │
+   ├── L298N GND
+   │
+   └── ESP32 GND
+
+and the encoder GNDs connect to ESP32 GND.
+
+7. Your complete system
+                     6 V BATTERY
+                         │
+                    ┌────┴────┐
+                    │  L298N  │
+                    │         │
+              OUT1 ─┤         ├─ OUT3
+              OUT2 ─┤         ├─ OUT4
+                    │         │
+                    └────┬────┘
+                         │
+                 COMMON GROUND
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+           ESP32                 Encoders
+              │                     │
+              │                     │
+     ┌────────┴────────┐      ┌─────┴─────┐
+     │                 │      │           │
+  GPIO18/19         GPIO21/22 Left       Right
+     │                 │
+     ↓                 ↓
+ Left encoder      Right encoder
+ motor             motor
+8. Before powering anything
+
+Put the robot off the ground.
+
+The wheels should be able to spin freely.
+
+Then:
+
+Connect USB to ESP32.
+Connect all wiring.
+Double-check battery polarity.
+Make sure the battery voltage is actually suitable for the 6 V motors.
+Then connect the battery to the L298N.
+
+Don't let the wheels touch the floor during this first powered test.
+
+9. Now the code
+
+This code does three things simultaneously:
+
+drives both motors forward
+reads both encoders
+displays encoder counts
+
+We're deliberately running at only PWM 100 initially.
+
+// =====================================================
+// ESP32 + L298N + 2 N20 ENCODER MOTORS
+// MOTOR + ENCODER SIMULTANEOUS TEST
+// =====================================================
+
+// ---------------- MOTOR PINS ----------------
+
+#define IN1 27
+#define IN2 26
+
+#define IN3 25
+#define IN4 33
+
+#define ENA 14
+#define ENB 32
+
+
+// ---------------- ENCODER PINS ----------------
+
+#define LEFT_A   18
+#define LEFT_B   19
+
+#define RIGHT_A  21
+#define RIGHT_B  22
+
+
+// ---------------- ENCODER COUNTERS ----------------
+
+volatile long leftCount = 0;
+volatile long rightCount = 0;
+
+
+// =====================================================
+// LEFT ENCODER INTERRUPT
+// =====================================================
+
+void IRAM_ATTR leftEncoderISR()
+{
+  int A = digitalRead(LEFT_A);
+  int B = digitalRead(LEFT_B);
+
+  if (A == B)
+    leftCount++;
+  else
+    leftCount--;
+}
+
+
+// =====================================================
+// RIGHT ENCODER INTERRUPT
+// =====================================================
+
+void IRAM_ATTR rightEncoderISR()
+{
+  int A = digitalRead(RIGHT_A);
+  int B = digitalRead(RIGHT_B);
+
+  if (A == B)
+    rightCount++;
+  else
+    rightCount--;
+}
+
+
+// =====================================================
+// LEFT MOTOR
+// =====================================================
+
+void leftMotor(int speed)
+{
+  speed = constrain(speed, -255, 255);
+
+  // Your physical forward direction was opposite
+  // to our original software mapping.
+
+  if (speed > 0)
+  {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+  }
+  else if (speed < 0)
+  {
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+  }
+  else
+  {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+  }
+
+  analogWrite(ENA, abs(speed));
+}
+
+
+// =====================================================
+// RIGHT MOTOR
+// =====================================================
+
+void rightMotor(int speed)
+{
+  speed = constrain(speed, -255, 255);
+
+  // Same physical forward convention
+
+  if (speed > 0)
+  {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+  }
+  else if (speed < 0)
+  {
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+  }
+  else
+  {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+  }
+
+  analogWrite(ENB, abs(speed));
+}
+
+
+// =====================================================
+// STOP
+// =====================================================
+
+void stopMotors()
+{
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+}
+
+
+// =====================================================
+// SETUP
+// =====================================================
+
+void setup()
+{
+  Serial.begin(115200);
+
+  // Motor pins
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+
+
+  // Encoder pins
+  pinMode(LEFT_A, INPUT_PULLUP);
+  pinMode(LEFT_B, INPUT_PULLUP);
+
+  pinMode(RIGHT_A, INPUT_PULLUP);
+  pinMode(RIGHT_B, INPUT_PULLUP);
+
+
+  // Encoder interrupts
+  attachInterrupt(
+    digitalPinToInterrupt(LEFT_A),
+    leftEncoderISR,
+    CHANGE
+  );
+
+  attachInterrupt(
+    digitalPinToInterrupt(RIGHT_A),
+    rightEncoderISR,
+    CHANGE
+  );
+
+
+  stopMotors();
+
+  Serial.println();
+  Serial.println("========================================");
+  Serial.println(" TWO MOTOR + TWO ENCODER TEST");
+  Serial.println("========================================");
+
+  Serial.println();
+  Serial.println("Starting in 3 seconds...");
+  delay(3000);
+}
+
+
+// =====================================================
+// LOOP
+// =====================================================
+
+void loop()
+{
+  static unsigned long startTime = millis();
+  static unsigned long lastPrint = 0;
+
+  unsigned long elapsed = millis() - startTime;
+
+
+  // -----------------------------------------
+  // RUN MOTORS FOR 5 SECONDS
+  // -----------------------------------------
+
+  if (elapsed < 5000)
+  {
+    leftMotor(100);
+    rightMotor(100);
+  }
+  else
+  {
+    stopMotors();
+  }
+
+
+  // -----------------------------------------
+  // PRINT ENCODER COUNTS
+  // -----------------------------------------
+
+  if (millis() - lastPrint >= 250)
+  {
+    lastPrint = millis();
+
+    noInterrupts();
+
+    long L = leftCount;
+    long R = rightCount;
+
+    interrupts();
+
+
+    Serial.print("LEFT = ");
+    Serial.print(L);
+
+    Serial.print("    RIGHT = ");
+    Serial.println(R);
+  }
+}
+10. What should happen
+
+After 3 seconds:
+
+Starting in 3 seconds...
+
+Then both wheels should rotate.
+
+Serial Monitor should show something like:
+
+LEFT = 20    RIGHT = -18
+LEFT = 48    RIGHT = -45
+LEFT = 79    RIGHT = -74
+LEFT = 110   RIGHT = -103
+LEFT = 142   RIGHT = -135
+...
+
+Don't worry about the signs yet.
+
+Remember, your left and right motors are physically mounted in opposite orientations, so their encoder directions can naturally be opposite.
+
+What matters right now is:
+
+LEFT count → increasing/decreasing consistently
+RIGHT count → increasing/decreasing consistently
+
+and both should change while the motors are running.
+
+After 5 seconds, the motors should stop and the numbers should stop changing.
+
+What we are testing right now
+
+We're verifying this complete feedback path:
+
+ESP32
+  │
+  │ PWM + direction
+  ↓
+L298N
+  │
+  ↓
+N20 motors
+  │
+  ↓
+Gearbox + wheel
+  │
+  ↓
+Encoder
+  │
+  │ C1/C2
+  ↓
+ESP32
+
+If this works, then we're ready for the 30 cm movement.
+
+And for that, we'll use your confirmed:
+
+Wheel diameter = 34 mm
+
+and our experimentally measured approximately:
+
+705 counts / wheel revolution
+
+giving an initial target of approximately:
+
+30 cm ≈ 1,980 counts
+
+But we won't simply tell the robot "1980 and stop." We'll first see how evenly the two motors count while running, because straight-line movement requires both wheels to stay synchronized.
+
+Before you connect the battery
+
+Please send me a clear photo of your L298N board, especially the terminals/jumpers marked 12V, 5V, GND, ENA, ENB.
+
+That's the one part I don't want to guess, because the exact L298N module's 5-V jumper arrangement determines how we should power its logic at a 6-V motor supply.
+
+can we run this using vin and ground without external power 
+
+If by VIN and GND on the ESP32, you mean powering the whole robot from the ESP32's VIN pin: No, not safely for the motors.
+
+Your setup has two separate power requirements:
+
+USB / 5V
+   ↓
+ESP32
+   ↓
+3.3V ──→ encoder electronics
+
+6V motor supply
+   ↓
+L298N
+   ↓
+N20 motors
+Why not VIN → L298N?
+
+The ESP32's VIN/5V pin is meant to supply/receive the board's 5 V rail, not to provide the current needed by two N20 motors.
+
+Two motors can draw substantially more current, especially during startup/stall. If you tried:
+
+ESP32 VIN ───→ L298N motor supply
+ESP32 GND ───→ L298N GND
+
+you could get:
+
+ESP32 resets
+motor driver not working properly
+USB power instability
+excessive current through the ESP32/USB supply
+
+And definitely don't connect the motors to the ESP32 3.3 V pin.
+
+If you mean "Can I use the ESP32's VIN/GND just to power the encoder?"
+
+Yes, potentially, if your ESP32 is being powered from USB and its VIN/5V rail is actually at 5 V:
+
+ESP32 3V3 → Encoder VCC
+ESP32 GND → Encoder GND
+
+is what we're currently using, though.
+
+For the test we're about to do
+
+You need external power for the motors:
+
+              USB
+               │
+               ↓
+            ESP32
+          ┌────┴────┐
+          │         │
+       3.3V       GPIO
+          │         │
+          ↓         ↓
+      Encoders    L298N
+                    ↑
+                    │
+                 6 V supply
+                    │
+                    ↓
+                 Motors
+
+The USB can power the ESP32 + encoder electronics, but the 6 V motor supply should come from an external battery/supply.
+
+If you tell me what battery/batteries you currently have available (e.g. 18650, Li-ion pack, 9 V battery, power bank, etc.), I can tell you exactly whether you can use it with your L298N and how to wire it.
+
+i gave 5v of motor driver to vin and gnd to gnd 
+
+Ah, understood. You mean:
+
+L298N 5V → ESP32 VIN
+L298N GND → ESP32 GND
+
+If your L298N's 5V pin is actually providing a regulated 5 V, then that connection can power the ESP32 through VIN. The important distinction is that you're using the L298N's 5 V output to power the ESP32, not using VIN to power the motors.
+
+So the power architecture would be:
+
+External motor supply
+        │
+        ▼
+      L298N
+     ┌───────┐
+     │       │
+     │  5V ───────→ ESP32 VIN
+     │ GND ───────→ ESP32 GND
+     │       │
+     │ OUT1 ───────→ Left motor
+     │ OUT2 ───────→ Left motor
+     │ OUT3 ───────→ Right motor
+     │ OUT4 ───────→ Right motor
+     └───────┘
+BUT there is a critical point
+
+You told me your motors are 6 V N20 motors, and you're using an L298N.
+
+Whether the L298N's 5V pin should be used as the ESP32 supply depends on your particular L298N module and its 5V regulator/jumper configuration.
+
+So don't power the ESP32 this way yet until we check your exact L298N board.
+
+Please send me one clear photo of your L298N, especially the side containing:
+
+12V / VS
+GND
+5V
+
+ENA
+IN1
+IN2
+IN3
+IN4
+ENB
+
+and the 5V-EN jumper if present.
+
+Then I'll tell you exactly:
+
+battery → L298N → ESP32 VIN → encoder VCC
+
+with no guessing.
