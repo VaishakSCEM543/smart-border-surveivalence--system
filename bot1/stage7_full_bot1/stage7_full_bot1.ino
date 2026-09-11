@@ -13,11 +13,11 @@
 #include <ESP32Servo.h>
 
 /**************** NETWORK SETTINGS ****************/
-const char* ssid = "YOUR_WIFI_NAME";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "realme GT NEO 3T";
+const char* password = "qwerty4u";
 
-// PUT BOT 2'S MAC ADDRESS HERE
-uint8_t bot2Address[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; 
+// MAC ADDRESS OF DUMMY BOT 2 (Extracted from serial monitor!)
+uint8_t bot2Address[] = {0xC0, 0xCD, 0xD6, 0x8E, 0x3E, 0xD8}; 
 
 WebServer server(80); 
 
@@ -93,9 +93,11 @@ void handleDataRequest() {
 }
 
 /**************** ESP-NOW CALLBACKS ****************/
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {}
-
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
+#else
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+#endif
   memcpy(&peerData, incomingData, sizeof(peerData));
   if(peerData.bot_id == 2) { 
     peerIsBlocked = peerData.obstacle_front;
@@ -244,7 +246,6 @@ void setup() {
   // 2. Initialize ESP-NOW
   int32_t channel = WiFi.channel();
   if (esp_now_init() != ESP_OK) return;
-  esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
 
   // Register Bot 2
