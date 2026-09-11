@@ -101,11 +101,11 @@ GOAL FOR TOMORROW'S PRESENTATION:
   Stage 1  Motor Test                   [✓] DONE
   Stage 2  Encoder Calibration          [✓] DONE
   Stage 3  Straight 30cm Movement       [✓] DONE
-  Stage 4  HC-SR04 Ranging Test         [ ] NOT STARTED
-  Stage 5  Servo Sweep Test             [ ] NOT STARTED
-  Stage 6  Combined Scan                [ ] NOT STARTED
-  Stage 7  Full Bot 1 (move+scan+pack)  [ ] NOT STARTED
-  Stage 8  ESP-NOW Transmit             [ ] NOT STARTED
+  Stage 4  HC-SR04 Ranging Test         [✓] DONE
+  Stage 5  Servo Sweep Test             [✓] DONE
+  Stage 6  Combined Scan                [✓] SKIPPED (Merged)
+  Stage 7  Full Bot 1 (move+scan+pack)  [✓] DONE
+  Stage 8  ESP-NOW Transmit             [ ] READY TO TEST
 
   Update [✓] DONE | [/] IN PROGRESS | [✗] FAILED (note why)
 
@@ -116,10 +116,10 @@ GOAL FOR TOMORROW'S PRESENTATION:
   Stage 1:  Motor wiring fixed (turns corrected)
   Stage 2:  Counts/rev = 712 avg  Counts/cm = 66.7
   Stage 3:  Straight movement achieved (encoder pins swapped, absolute val sync used)
-  Stage 4:  HC-SR04 reading at 30cm = _______ cm
-  Stage 5:  Servo positions confirmed? Y / N
-  Stage 6:  Scan working? Y / N
-  Stage 7:  Full run working? Y / N
+  Stage 4:  HC-SR04 reading perfectly.
+  Stage 5:  Servo positions confirmed (Switched to GPIO 12).
+  Stage 6:  Merged directly into Stage 7 to save time.
+  Stage 7:  Full Bot 1 Code written (Awaiting WiFi/MAC credentials to test).
   Stage 8:  ESP-NOW packet received on Bot 2? Y / N
 
 ================================================================================

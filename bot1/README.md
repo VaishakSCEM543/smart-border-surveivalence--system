@@ -14,8 +14,8 @@
 | 3 | `stage3_straight_30cm` | Drive exactly 30 cm (encoder-controlled) | ✅ **DONE** |
 | 4 | `stage4_ultrasonic_test` | Verify HC-SR04 distance readings | ✅ **DONE** |
 | 5 | `stage5_servo_test` | Verify SG90 servo positions | ⬜ Next |
-| 6 | `stage6_scan` | Servo sweep + obstacle distances | ⬜ |
-| 7 | `stage7_full_bot1` | Full run: move + scan + data packet | ⬜ |
+| 6 | `stage6_scan` | Servo sweep + obstacle distances | ✅ **SKIPPED (Merged)** |
+| 7 | `stage7_full_bot1` | Full run: move + scan + data packet | ✅ **DONE** |
 | 8 | `stage8_espnow_tx` | Transmit packet to Bot 2 via ESP-NOW | ⬜ |
 
 ---
@@ -181,10 +181,10 @@ bot1/
 │   └── stage5_servo_test.ino         ⬅ DO THIS NEXT
 │
 ├── stage6_scan/
-│   └── stage6_scan.ino
+│   └── stage6_scan.ino               ✅ SKIPPED (Merged to 7)
 │
 ├── stage7_full_bot1/
-│   └── stage7_full_bot1.ino          ← Demo target
+│   └── stage7_full_bot1.ino          ✅ DONE (Demo Target)
 │
 ├── stage8_espnow_tx/
 │   └── stage8_espnow_tx.ino          ← Bot 1 transmitter

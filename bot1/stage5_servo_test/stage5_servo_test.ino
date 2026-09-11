@@ -1,131 +1,59 @@
 // ============================================================
-// STAGE 5 — SERVO SWEEP TEST
-// Bot 1 | ESP32 + SG90 Servo
+// STAGE 5 — SERVO SWEEP TEST (SG90)
+// Bot 1 | ESP32
 // ============================================================
-// PURPOSE:
-//   Verify the SG90 servo moves to correct positions.
-//   Test positions: 0° → 45° → 90° → 135° → 180° → back
-//
-// CONNECTIONS:
-//   Signal → GPIO 13
-//   VCC    → External 5V (NOT ESP32 3.3V — servo draws too much current)
-//   GND    → Common GND
-//
-// ⚠ Do NOT power servo from ESP32 3.3V.
-//    It will cause voltage drops and ESP32 resets.
-//
-// LIBRARY REQUIRED:
-//   Arduino IDE → Sketch → Include Library → Manage Libraries
-//   Search: "ESP32Servo"  →  Install "ESP32Servo"
+// ⚠️ PREREQUISITE:
+//   You MUST install the "ESP32Servo" library in Arduino IDE:
+//   Go to Sketch -> Include Library -> Manage Libraries
+//   Search for "ESP32Servo" by Kevin Harrington and install it.
 //
 // HOW TO USE:
-//   1. Connect servo with external 5V
-//   2. Upload and open Serial Monitor at 115200
-//   3. Send angle (0-180) via Serial to move to that position
-//   4. Servo auto-sweeps if no input
-//
-// PASS CRITERIA:
-//   ✓ Servo reaches all positions without jitter
-//   ✓ 0° = one extreme, 90° = center, 180° = other extreme
-//   ✓ No ESP32 resets during servo movement
+//   1. Ensure SG90 Servo is wired:
+//        Orange/Yellow (Signal) → GPIO 13
+//        Red (VCC)              → External 5V (or VIN) - NOT 3.3V!
+//        Brown/Black (GND)      → GND
+//   2. Upload and open Serial Monitor at 115200.
+//   3. The servo should sweep left, center, right, center continuously.
 // ============================================================
 
 #include <ESP32Servo.h>
 
-#define SERVO_PIN  13
+#define SERVO_PIN 12
 
-Servo myServo;
+Servo scanServo;
 
-// Scan positions (degrees)
-const int SCAN_ANGLES[] = {0, 30, 60, 90, 120, 150, 180};
-const int NUM_ANGLES = sizeof(SCAN_ANGLES) / sizeof(SCAN_ANGLES[0]);
-
-// ============================================================
-
-void setup()
-{
+void setup() {
   Serial.begin(115200);
+  
+  // Allow allocation of all timers
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  
+  // Attach servo to pin with standard SG90 min/max pulse widths
+  scanServo.setPeriodHertz(50); // Standard 50hz servo
+  scanServo.attach(SERVO_PIN, 500, 2400); 
 
-  // Attach servo — ESP32Servo uses ledc PWM
-  myServo.attach(SERVO_PIN, 500, 2400);  // min/max pulse width µs
-
-  Serial.println();
-  Serial.println("=========================================");
+  Serial.println("\n=============================================");
   Serial.println("  STAGE 5 — SERVO SWEEP TEST");
-  Serial.println("=========================================");
-  Serial.println("  Signal → GPIO13   VCC → external 5V");
-  Serial.println();
-  Serial.println("Commands:");
-  Serial.println("  Send a number (0-180) to move servo to that angle");
-  Serial.println("  Send 'S' to start auto-sweep");
-  Serial.println();
-
-  // Start at center
-  myServo.write(90);
-  delay(500);
-  Serial.println("Servo at 90° (center). Ready.");
-  Serial.println();
+  Serial.println("=============================================");
 }
 
-// ============================================================
+void loop() {
+  Serial.println("Sweeping Left (180°)...");
+  scanServo.write(180);
+  delay(1000);
 
-bool autoSweep = true;
-int sweepIndex = 0;
+  Serial.println("Sweeping Center (90°)...");
+  scanServo.write(90);
+  delay(1000);
 
-void loop()
-{
-  // Check for serial input
-  if (Serial.available())
-  {
-    String input = Serial.readStringUntil('\n');
-    input.trim();
+  Serial.println("Sweeping Right (0°)...");
+  scanServo.write(0);
+  delay(1000);
 
-    if (input == "S" || input == "s")
-    {
-      autoSweep = true;
-      sweepIndex = 0;
-      Serial.println(">>> Auto-sweep started");
-    }
-    else
-    {
-      int angle = input.toInt();
-      if (angle >= 0 && angle <= 180)
-      {
-        autoSweep = false;
-        myServo.write(angle);
-        Serial.print(">>> Moved to ");
-        Serial.print(angle);
-        Serial.println("°");
-      }
-      else
-      {
-        Serial.println("Invalid. Send 0-180 or 'S' for sweep.");
-      }
-    }
-  }
-
-  // Auto-sweep through scan positions
-  if (autoSweep)
-  {
-    static unsigned long lastMove = 0;
-
-    if (millis() - lastMove >= 700)
-    {
-      lastMove = millis();
-
-      int angle = SCAN_ANGLES[sweepIndex];
-      myServo.write(angle);
-
-      Serial.print("Servo → ");
-      Serial.print(angle);
-      Serial.println("°");
-
-      sweepIndex++;
-      if (sweepIndex >= NUM_ANGLES)
-      {
-        sweepIndex = 0;
-        Serial.println("--- Sweep complete, repeating ---");
-      }
-    }
-  }
+  Serial.println("Sweeping Center (90°)...");
+  scanServo.write(90);
+  delay(1000);
 }
