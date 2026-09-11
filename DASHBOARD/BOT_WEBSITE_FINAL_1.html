@@ -4996,8 +4996,10 @@
         };
 
         const diff = rpm > 0 ? Math.sin(mobRpmPhase) * 15 : 0; // Fake steering diff
-        drawGauge(110, 140, 85, Math.max(0, rpm + diff), 'LEFT TREAD');
-        drawGauge(340, 140, 85, Math.max(0, rpm - diff), 'RIGHT TREAD');
+        const realLeft = typeof window.esp_left_pwm !== 'undefined' ? window.esp_left_pwm : Math.max(0, rpm + diff);
+        const realRight = typeof window.esp_right_pwm !== 'undefined' ? window.esp_right_pwm : Math.max(0, rpm - diff);
+        drawGauge(110, 140, 85, realLeft, 'LEFT TREAD');
+        drawGauge(340, 140, 85, realRight, 'RIGHT TREAD');
       }
 
       // 2. Draw 3D ToF Collision Tunnel
@@ -5415,6 +5417,26 @@
       const tile = document.getElementById('esp-ct-status-tile');
       if (tile) tile.classList.remove('live-pulse');
     }
+  </script>
+  <script>
+    // ESP32 SWARM KINEMATICS SYNC
+    window.esp_left_pwm = 0;
+    window.esp_right_pwm = 0;
+    setInterval(async () => {
+      try {
+        const res = await fetch("http://10.92.180.224/data", { signal: AbortSignal.timeout(500) });
+        if(res.ok) {
+          const data = await res.json();
+          window.esp_left_pwm = Math.abs(data.left_pwm || 0);
+          window.esp_right_pwm = Math.abs(data.right_pwm || 0);
+          
+          if (typeof radarLastData !== 'undefined') {
+             radarLastData.bot_moving = (window.esp_left_pwm > 0 || window.esp_right_pwm > 0);
+             radarLastData.motor_rpm = Math.round((window.esp_left_pwm + window.esp_right_pwm) / 2);
+          }
+        }
+      } catch(e) {}
+    }, 200);
   </script>
 </body>
 

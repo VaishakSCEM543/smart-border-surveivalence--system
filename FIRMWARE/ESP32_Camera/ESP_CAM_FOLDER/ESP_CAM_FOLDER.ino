@@ -10,8 +10,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-const char* ssid = "Ashwin";
-const char* password = "12345678";
+const char* ssid = "realme GT NEO 3T";
+const char* password = "qwerty4u";
 
 WebServer server(80);
 

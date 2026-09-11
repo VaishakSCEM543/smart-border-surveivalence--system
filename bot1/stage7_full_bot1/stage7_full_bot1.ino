@@ -64,6 +64,8 @@ const int TURN_TIME_MS = 500;
 
 unsigned long last_auto = 0;
 unsigned long lastControlTime = 0;
+int currentLeftSpd = 0;
+int currentRightSpd = 0;
 
 enum BotState { STATE_DRIVE, STATE_SCAN, STATE_TURN };
 BotState currentState = STATE_DRIVE;
@@ -82,12 +84,14 @@ void IRAM_ATTR rightISR() {
 /**************** HTTP API ENDPOINT ****************/
 void handleDataRequest() {
   server.sendHeader("Access-Control-Allow-Origin", "*");
-  char jsonStr[150];
+  char jsonStr[200];
   snprintf(jsonStr, sizeof(jsonStr), 
-    "{\"bot_id\": 1, \"local_distance\": %.2f, \"local_blocked\": %s, \"peer_blocked\": %s}", 
+    "{\"bot_id\": 1, \"local_distance\": %.2f, \"local_blocked\": %s, \"peer_blocked\": %s, \"left_pwm\": %d, \"right_pwm\": %d}", 
     myData.front_distance, 
     myData.obstacle_front ? "true" : "false", 
-    peerIsBlocked ? "true" : "false"
+    peerIsBlocked ? "true" : "false",
+    currentLeftSpd,
+    currentRightSpd
   );
   server.send(200, "application/json", jsonStr);
 }
@@ -107,6 +111,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 /**************** MOTOR & SENSOR LOGIC ****************/
 void leftMotor(int speed) {
+  currentLeftSpd = speed;
   speed = constrain(speed, -255, 255);
   if (speed > 0)      { digitalWrite(IN1, LOW);  digitalWrite(IN2, HIGH); }
   else if (speed < 0) { digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);  }
@@ -115,6 +120,7 @@ void leftMotor(int speed) {
 }
 
 void rightMotor(int speed) {
+  currentRightSpd = speed;
   speed = constrain(speed, -255, 255);
   if (speed > 0)      { digitalWrite(IN3, LOW);  digitalWrite(IN4, HIGH); }
   else if (speed < 0) { digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);  }
@@ -123,6 +129,8 @@ void rightMotor(int speed) {
 }
 
 void stopMotors() {
+  currentLeftSpd = 0;
+  currentRightSpd = 0;
   analogWrite(ENA, 0); analogWrite(ENB, 0);
   digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
