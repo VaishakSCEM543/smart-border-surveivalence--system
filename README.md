@@ -1,80 +1,71 @@
-# Intelligent Swarm based bots for Continuous area Patrolling and detection (ISBCAPD)
+# Intelligent Swarm Based Bots for Continuous Area Patrolling and Detection (ISBCAPD)
 
-![Project Version](https://img.shields.io/badge/Version-3.0_Tactical-cyan)
-![Platform](https://img.shields.io/badge/Platform-ESP32--CAM_|_Python_|_Firebase-green)
-![Security](https://img.shields.io/badge/Security-Hardened-blueviolet)
+> **Abstract:** Border surveillance is a major factor in national security. Traditional methods often suffer from limited coverage, high operational costs, and delayed response times. **ISBCAPD** (Sentinel) presents a smart border surveillance system using ESP32-based swarm nodes integrated with multi-sensor fusion (Radar, Time-of-Flight (ToF), GPS, and Camera modules). 
 
-## 📡 Overview: Autonomous Area Patrolling
-**ISBCAPD** is a high-fidelity, distributed sensor and robotics framework designed for **Continuous area Patrolling and detection**. The system utilizes a swarm of autonomous bots to monitor large perimeters, employing Edge-AI and real-time telemetry to provide a unified command and control interface.
+This system provides real-time monitoring by detecting motion, capturing optical data, and verifying intrusions using sensor fusion and lightweight YOLO object detection. The architecture operates in a swarm, allowing distributed processing and localized data communication. By integrating **micro-ROS** on the ESP32 and **ROS 2 Jazzy** for centralized SLAM and path planning, the system acts as a highly scalable, fault-tolerant, and power-efficient edge security solution.
 
 ---
 
-### 🖥️ Tactical C4ISR Dashboard
-The system's control center is a futuristic, glassmorphism-inspired terminal designed for high-stakes perimeter monitoring:
+## Key Features
 
-![C4ISR Dashboard Active Terminal](DOCS/images/dash1.png)
-![Kinetics and Radar Deep-Dive](DOCS/images/dash2.png)
-
-- **Neural Targeting Matrix**: Live AI-processed video feed from the active swarm.
-- **Biometric Analytics**: Real-time confidence scoring and threat classification per unit.
-- **Radar Sweep**: Visualized mmWave HLK-LD2410C telemetry for motion tracking.
-- **System Vitals**: Real-time bot health, GPS fixes, and connection uptime.
-
-### 🤖 Intelligent AI Backend
-- **Edge Vision Engine**: Powered by an optimized **YOLOv8s** model for low-latency person detection.
-- **Asynchronous Pipeline**: Built using a Producer-Consumer threading model in Python to eliminate video lag.
-- **Temporal Hysteresis Logic**: Multi-frame smoothing algorithm that eliminates false triggers from environmental noise.
-
-### 🛡️ Hardened Cloud Infrastructure
-- **Secure Telemetry**: Custom Firebase Realtime Database rules protect swarm data from unauthorized access.
-- **Live Sync**: Sub-second synchronization between individual patrol bots and the global dashboard.
+1. **Swarm Intelligence & Edge Processing:** Decentralized architecture where ESP32 microcontrollers process immediate threats locally and share telemetry with a centralized ROS 2 workstation for heavy computation.
+2. **Multi-Sensor Fusion (Radar + ToF + Optics):** 
+   - **Radar:** Scans for motion continuously in all weather conditions.
+   - **ToF Sensor:** Verifies the physical distance of the detected motion to prevent environmental false alarms.
+   - **ESP32-CAM:** Captures visual proof of the intrusion for YOLOv8 AI inference.
+3. **ROS 2 & micro-ROS Integration:** Embedded bots communicate with a ROS 2 Jazzy workstation via UDP. Enables advanced SLAM (Simultaneous Localization and Mapping) and Navigation2 capabilities.
+4. **Temporal AI Smoothing:** YOLO-based object detection utilizes multi-frame temporal hysteresis (smoothing) to eliminate false positives caused by shadows, lighting changes, or network jitter.
+5. **Real-Time GPS Telemetry & Dashboard:** A WebSocket-powered web dashboard (Web UI) monitors the swarm, visualizing live optics, radar fields, and exact GPS coordinates of intrusions.
 
 ---
 
-## 🛠️ System Architecture
-- **Vision Core**: Python 3.13 + OpenCV + Ultralytics YOLOv8s + ONNX Runtime
-- **Frontend UI**: HTML5 / CSS3 / JavaScript (Share Tech Mono & Orbitron Typography)
-- **Communications**: MJPEG HTTP Stream + REST API + Firebase SDK
+## High-Level Swarm Architecture
 
-## 🚀 Deployment Guide
+The following diagram illustrates how the ESP32 bots function within the overarching ROS 2 ecosystem:
 
-### 1. AI Backend Configuration
-```bash
-# Clone the repository
-git clone https://github.com/VaishakSCEM543/smart-border-surveivalence--system.git
-cd smart-border-surveivalence--system
+```mermaid
+graph TD
+    subgraph Swarm Nodes [ESP32 Edge Devices]
+        Bot1[Bot 1: Admin Sensor Node<br>ESP32 + Radar + ToF + GPS]
+        Bot2[Bot 2: Recon Node<br>ESP32 + Encoders + Motors]
+        Cam[ESP32-CAM Module<br>Optics Array]
+        
+        Bot1 <-->|ESP-NOW| Bot2
+        Bot1 -->|Motion Trigger| Cam
+    end
 
-# Install requirements
-pip install opencv-python ultralytics onnxruntime flask
+    subgraph ROS 2 Ecosystem [Base Station]
+        uROS[micro-ROS Agent<br>UDP Comm]
+        SLAM[SLAM Toolbox & Nav2<br>Occupancy Mapping]
+        AI[YOLO AI Engine<br>Temporal Smoothing]
+        DB[WebSocket Web Server<br>Dashboard]
+    end
 
-# Launch the Primary Detection Engine
-python main.py
+    Bot1 ===|Telemetry Data| uROS
+    Bot2 ===|Odometry Data| uROS
+    Cam -.->|HTTP Video Stream| AI
+    
+    uROS --> SLAM
+    AI --> DB
+    SLAM --> DB
 ```
 
-### 2. Tactical Dashboard Access
-- Locate and open `BOT_WEBSITE_FINAL_1.html` in your browser.
-- Log in with your secure credentials to initiate the drone-fleet sync.
+---
+
+## Directory Structure
+
+* `bot1/` — Core firmware for the primary ESP32 Admin Node (handles sensors). Includes all staging codes inside `stage_codes/`.
+* `bot2/` — Firmware for the Subordinate Recon Node (handles motor kinematics).
+* `esp32_slam_bot/` — Integrated SLAM configuration firmware.
+* `AI_ENGINE/` — Contains the Python-based YOLO object detection scripts with temporal smoothing and threading logic.
+* `ARCHITECTURE/` — Detailed architecture documentation and hardware diagrams.
+* `DASHBOARD/` — HTML/JS based WebSocket dashboard for system monitoring.
+* `FIRMWARE/` — Core libraries, ESP32-CAM code, and legacy tests.
 
 ---
 
-## 🔬 4. Research & Problem Statement
-**The Core Engineering Problem:** Achieving a continuous state of high-probability detection across vast geographical expanses while operating under extreme constraints regarding power, communication bandwidth, and human intervention.
+## Academic Reference
+This project was developed as a comprehensive engineering solution for advanced border security, emphasizing the shift from centralized monolith architectures to distributed IoT swarm ecosystems.
 
-Traditional surveillance paradigms rely heavily on centralized infrastructure (fixed cameras) or human capital (manual patrols), which suffer from severe degradation in remote terrains due to infrastructure dependencies, physiological human limitations (e.g., vigilance decrement), and environmental interference.
-
-**The Identified Engineering Gap:** There is a critical lack of a scalable, infrastructure-light system that successfully bridges the gap between low-level distributed sensing (like static Wireless Sensor Networks with high false alarms) and high-level, mobile identification (like expensive UGVs/UAVs that are infrastructure-heavy and energy-intensive).
-
-ISBCAPD bridges this gap by utilizing a decentralized swarm of mobile nodes. These bots distribute perception, mobility, and computation directly to the edge, fusing local sensor data and relying on local autonomy to overcome deterministic blind spots and centralized points of failure without relying on a central command tower or high-bandwidth video streaming.
-
-## 🔮 5. Future Research Roadmap
-As part of our **Major Engineering Project**, we are continuing to develop the ISBCAPD system with:
-- **Swarm Coordination**: Decentralized logic for multi-bot patrolling patterns.
-- **Enhanced mmWave Filtering**: Refining the HLK-LD2410C data to eliminate background environmental noise.
-- **Autonomous Navigation**: Integrating ToF (Time-of-Flight) sensors for dynamic obstacle avoidance in unpredictable terrains.
-- **Paper Publication**: Finalizing benchmarks for IEEE journal submission.
-
-## 🤝 6. Research Contributions
-We welcome collaboration from the academic and robotics community. Please refer to [CITATION.cff](./CITATION.cff) to formally reference this work in your publications.
-
----
-**"Intelligent Autonomy For Continuous Perimeter Protection."**
+**Authors:** Ashwin Suresh | Neha Raj | Preetham Krishan K J | Vaishak D Karkera  
+**Guide:** Mrs. Mehnaz Fathima C.
