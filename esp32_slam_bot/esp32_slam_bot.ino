@@ -1,0 +1,535 @@
+/********************************************************************
+   ESP32 SLAM BOT
+   FEATURES
+   - micro-ROS WiFi
+   - /cmd_vel subscriber
+   - Encoder odometry
+   - /odom publisher
+   - Ultrasonic + Servo sweep
+   - /scan publisher
+   - Autonomous obstacle avoidance
+********************************************************************/
+
+#include <micro_ros_arduino.h>
+#include <WiFi.h>
+
+#include <rcl/rcl.h>
+#include <rcl/error_handling.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+
+#include <geometry_msgs/msg/twist.h>
+#include <nav_msgs/msg/odometry.h>
+#include <sensor_msgs/msg/laser_scan.h>
+
+#include <ESP32Servo.h>
+#include <rosidl_runtime_c/string_functions.h>
+
+#define RCCHECK(fn) { rcl_ret_t rc = fn; if(rc != RCL_RET_OK) error_loop(); }
+#define RCSOFTCHECK(fn) { rcl_ret_t rc = fn; if(rc != RCL_RET_OK) {} }
+
+/**************** WIFI ****************/
+char ssid[] = "Ashwin";
+char pass[] = "12345678";
+char agent_ip[] = "10.142.196.54";
+uint agent_port = 8888;
+
+/**************** MOTOR ****************/
+const int IN1 = 27;
+const int IN2 = 26;
+const int IN3 = 25;
+const int IN4 = 33;
+
+const int ENA = 14;
+const int ENB = 32;
+
+/**************** ENCODERS ****************/
+const int LEFT_C1  = 34;
+const int RIGHT_C1 = 39;   // VN
+
+volatile long left_ticks  = 0;
+volatile long right_ticks = 0;
+
+/**************** ULTRASONIC + SERVO ****************/
+const int TRIG = 5;
+const int ECHO = 18;
+const int SERVO_PIN = 19;
+
+Servo scanServo;
+
+/**************** ROS ****************/
+rcl_subscription_t subscriber;
+rcl_publisher_t odom_pub;
+rcl_publisher_t scan_pub;
+
+geometry_msgs__msg__Twist cmd_msg;
+nav_msgs__msg__Odometry odom_msg;
+sensor_msgs__msg__LaserScan scan_msg;
+
+rclc_executor_t executor;
+rclc_support_t support;
+rcl_allocator_t allocator;
+rcl_node_t node;
+
+/**************** ROBOT PARAMS ****************/
+const float wheel_radius = 0.0175f;
+const float wheel_base = 0.18f;
+const int ticks_per_rev = 340;
+
+float x_pos = 0.0f;
+float y_pos = 0.0f;
+float theta = 0.0f;
+
+/**************** AUTONOMOUS MODE ****************/
+bool autonomous_mode = true;
+
+const int AUTO_SPEED = 150;
+const float OBSTACLE_LIMIT = 0.30f;
+const int TURN_TIME_MS = 450;
+
+unsigned long last_auto = 0;
+unsigned long last_odom = 0;
+unsigned long last_scan = 0;
+
+/**************** SCAN STORAGE ****************/
+const int samples = 19;
+static float ranges[samples];
+
+/**************** ERROR ****************/
+void error_loop()
+{
+  stopMotors();
+  while (1)
+  {
+    delay(100);
+  }
+}
+
+/**************** ENCODER ISR ****************/
+void IRAM_ATTR leftEncoderISR()
+{
+  left_ticks++;
+}
+
+void IRAM_ATTR rightEncoderISR()
+{
+  right_ticks++;
+}
+
+/**************** MOTOR ****************/
+void setMotorPWM(int left_pwm, int right_pwm)
+{
+  left_pwm  = constrain(left_pwm, -255, 255);
+  right_pwm = constrain(right_pwm, -255, 255);
+
+  if (left_pwm > 0)
+  {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+  }
+  else if (left_pwm < 0)
+  {
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+  }
+  else
+  {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+  }
+
+  if (right_pwm > 0)
+  {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+  }
+  else if (right_pwm < 0)
+  {
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+  }
+  else
+  {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+  }
+
+  analogWrite(ENA, abs(left_pwm));
+  analogWrite(ENB, abs(right_pwm));
+}
+
+void stopMotors()
+{
+  setMotorPWM(0, 0);
+}
+
+/**************** CMD_VEL ****************/
+void cmd_vel_callback(const void * msgin)
+{
+  if (autonomous_mode)
+  {
+    return;
+  }
+
+  const geometry_msgs__msg__Twist * msg =
+      (const geometry_msgs__msg__Twist *) msgin;
+
+  float linear  = msg->linear.x;
+  float angular = msg->angular.z;
+
+  float left_vel  = linear - (angular * wheel_base / 2.0f);
+  float right_vel = linear + (angular * wheel_base / 2.0f);
+
+  int left_pwm  = constrain((int)(left_vel * 255.0f), -255, 255);
+  int right_pwm = constrain((int)(right_vel * 255.0f), -255, 255);
+
+  setMotorPWM(left_pwm, right_pwm);
+}
+
+/**************** ODOM ****************/
+void publishOdom()
+{
+  static long prev_left = 0;
+  static long prev_right = 0;
+
+  long current_left;
+  long current_right;
+
+  noInterrupts();
+  current_left = left_ticks;
+  current_right = right_ticks;
+  interrupts();
+
+  long dl = current_left - prev_left;
+  long dr = current_right - prev_right;
+
+  prev_left = current_left;
+  prev_right = current_right;
+
+  float left_dist =
+      (2.0f * PI * wheel_radius * dl) / ticks_per_rev;
+
+  float right_dist =
+      (2.0f * PI * wheel_radius * dr) / ticks_per_rev;
+
+  float dist = (left_dist + right_dist) / 2.0f;
+  float dtheta = (right_dist - left_dist) / wheel_base;
+
+  x_pos += dist * cos(theta);
+  y_pos += dist * sin(theta);
+  theta += dtheta;
+
+  unsigned long now = millis();
+
+  odom_msg.header.stamp.sec = now / 1000;
+  odom_msg.header.stamp.nanosec = (now % 1000) * 1000000;
+
+  odom_msg.pose.pose.position.x = x_pos;
+  odom_msg.pose.pose.position.y = y_pos;
+  odom_msg.pose.pose.position.z = 0.0;
+
+  odom_msg.pose.pose.orientation.x = 0.0;
+  odom_msg.pose.pose.orientation.y = 0.0;
+  odom_msg.pose.pose.orientation.z = sin(theta / 2.0f);
+  odom_msg.pose.pose.orientation.w = cos(theta / 2.0f);
+
+  odom_msg.twist.twist.linear.x = dist / 0.1f;
+  odom_msg.twist.twist.linear.y = 0.0;
+  odom_msg.twist.twist.linear.z = 0.0;
+
+  odom_msg.twist.twist.angular.x = 0.0;
+  odom_msg.twist.twist.angular.y = 0.0;
+  odom_msg.twist.twist.angular.z = dtheta / 0.1f;
+
+  RCSOFTCHECK(rcl_publish(&odom_pub, &odom_msg, NULL));
+}
+
+/**************** ULTRASONIC ****************/
+float readDistance()
+{
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(TRIG, LOW);
+
+  long duration = pulseIn(ECHO, HIGH, 30000);
+
+  if (duration == 0)
+  {
+    return 4.0f;
+  }
+
+  float distance = (duration * 0.034f / 2.0f) / 100.0f;
+
+  if (distance <= 0.02f || distance > 4.0f)
+  {
+    distance = 4.0f;
+  }
+
+  return distance;
+}
+
+/**************** AUTONOMOUS OBSTACLE AVOIDANCE ****************/
+void autonomousControl()
+{
+  scanServo.write(90);
+  delay(60);
+
+  float front = readDistance();
+
+  if (front > OBSTACLE_LIMIT)
+  {
+    setMotorPWM(AUTO_SPEED, AUTO_SPEED);
+  }
+  else
+  {
+    stopMotors();
+    delay(120);
+
+    scanServo.write(30);
+    delay(220);
+    float right_dist = readDistance();
+
+    scanServo.write(150);
+    delay(220);
+    float left_dist = readDistance();
+
+    scanServo.write(90);
+    delay(80);
+
+    if (left_dist > right_dist)
+    {
+      setMotorPWM(-AUTO_SPEED, AUTO_SPEED);
+      delay(TURN_TIME_MS);
+    }
+    else
+    {
+      setMotorPWM(AUTO_SPEED, -AUTO_SPEED);
+      delay(TURN_TIME_MS);
+    }
+
+    stopMotors();
+    delay(80);
+  }
+}
+
+/**************** SCAN ****************/
+void publishScan()
+{
+  int index = 0;
+
+  for (int angle = 0; angle <= 180; angle += 10)
+  {
+    scanServo.write(angle);
+    delay(90);
+
+    float d = readDistance();
+
+    if (d <= 0.02f || d > 4.0f)
+    {
+      d = 4.0f;
+    }
+
+    ranges[index] = d;
+    index++;
+  }
+
+  scanServo.write(90);
+
+  unsigned long now = millis();
+
+  scan_msg.header.stamp.sec = now / 1000;
+  scan_msg.header.stamp.nanosec = (now % 1000) * 1000000;
+
+  scan_msg.angle_min = -PI / 2.0f;
+  scan_msg.angle_max = PI / 2.0f;
+  scan_msg.angle_increment = PI / 18.0f;
+
+  scan_msg.time_increment = 0.0f;
+  scan_msg.scan_time = 0.0f;
+
+  scan_msg.range_min = 0.02f;
+  scan_msg.range_max = 4.0f;
+
+  scan_msg.ranges.data = ranges;
+  scan_msg.ranges.size = samples;
+  scan_msg.ranges.capacity = samples;
+
+  scan_msg.intensities.data = NULL;
+  scan_msg.intensities.size = 0;
+  scan_msg.intensities.capacity = 0;
+
+  RCSOFTCHECK(rcl_publish(&scan_pub, &scan_msg, NULL));
+}
+
+/**************** SETUP ****************/
+void setup()
+{
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+
+  pinMode(LEFT_C1, INPUT);
+  pinMode(RIGHT_C1, INPUT);
+
+  attachInterrupt(
+      digitalPinToInterrupt(LEFT_C1),
+      leftEncoderISR,
+      RISING);
+
+  attachInterrupt(
+      digitalPinToInterrupt(RIGHT_C1),
+      rightEncoderISR,
+      RISING);
+
+  scanServo.attach(SERVO_PIN);
+  scanServo.write(90);
+
+  stopMotors();
+
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, pass);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.println("connecting...");
+  }
+
+  Serial.println("wifi connected");
+  Serial.println(WiFi.localIP());
+
+  set_microros_wifi_transports(
+      ssid,
+      pass,
+      agent_ip,
+      agent_port);
+
+  delay(2000);
+
+  allocator = rcl_get_default_allocator();
+
+  RCCHECK(
+      rclc_support_init(
+          &support,
+          0,
+          NULL,
+          &allocator));
+
+  RCCHECK(
+      rclc_node_init_default(
+          &node,
+          "esp32_slam_bot",
+          "",
+          &support));
+
+  RCCHECK(
+      rclc_subscription_init_default(
+          &subscriber,
+          &node,
+          ROSIDL_GET_MSG_TYPE_SUPPORT(
+              geometry_msgs,
+              msg,
+              Twist),
+          "/cmd_vel"));
+
+  RCCHECK(
+      rclc_publisher_init_default(
+          &odom_pub,
+          &node,
+          ROSIDL_GET_MSG_TYPE_SUPPORT(
+              nav_msgs,
+              msg,
+              Odometry),
+          "/odom"));
+
+  rosidl_runtime_c__String__assign(
+      &odom_msg.header.frame_id,
+      "odom");
+
+  rosidl_runtime_c__String__assign(
+      &odom_msg.child_frame_id,
+      "base_link");
+
+  RCCHECK(
+      rclc_publisher_init_default(
+          &scan_pub,
+          &node,
+          ROSIDL_GET_MSG_TYPE_SUPPORT(
+              sensor_msgs,
+              msg,
+              LaserScan),
+          "/scan"));
+
+  rosidl_runtime_c__String__assign(
+      &scan_msg.header.frame_id,
+      "laser");
+
+  scan_msg.ranges.data = ranges;
+  scan_msg.ranges.size = samples;
+  scan_msg.ranges.capacity = samples;
+
+  scan_msg.intensities.data = NULL;
+  scan_msg.intensities.size = 0;
+  scan_msg.intensities.capacity = 0;
+
+  RCCHECK(
+      rclc_executor_init(
+          &executor,
+          &support.context,
+          1,
+          &allocator));
+
+  RCCHECK(
+      rclc_executor_add_subscription(
+          &executor,
+          &subscriber,
+          &cmd_msg,
+          &cmd_vel_callback,
+          ON_NEW_DATA));
+
+  Serial.println("micro-ROS ready");
+}
+
+/**************** LOOP ****************/
+void loop()
+{
+  rclc_executor_spin_some(
+      &executor,
+      RCL_MS_TO_NS(10));
+
+  if (millis() - last_auto > 150)
+  {
+    if (autonomous_mode)
+    {
+      autonomousControl();
+    }
+
+    last_auto = millis();
+  }
+
+  if (millis() - last_odom > 100)
+  {
+    publishOdom();
+    last_odom = millis();
+  }
+
+  if (millis() - last_scan > 3000)
+  {
+    publishScan();
+    last_scan = millis();
+  }
+
+  delay(10);
+}
